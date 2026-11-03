@@ -165,7 +165,7 @@ const BIO = [
 ];
 
 function blankPerson(){ return {id:String(Date.now()), prenom:'', type:'adulte', sexe:'homme', naissance:'', taille:'', poids:'', activite:'moderee', metier:false, objectif:'equilibre', regime:'omnivore', moinsSucre:true, evites:'', allergies:[], autreAllergie:''}; }
-function blankFoyer(){ return {budget:'', bio:'cles', tempsSemaine:'30', tempsWeekend:'60', midiMaison:false, cuisines:[], cuisineStrict:false, done:false}; }
+function blankFoyer(){ return {budget:'', bio:'cles', tempsSemaine:'30', tempsWeekend:'60', midi:'non', soirLeger:false, cuisines:[], cuisineStrict:false, done:false}; }
 
 let S = load() || {people:[], foyer:blankFoyer()};
 let view = S.people.length ? {name:'home'} : {name:'person', step:0, draft:blankPerson(), isNew:true};
@@ -359,8 +359,10 @@ function renderFoyer(){
     h += `<div class="body">
       <div class="field"><span class="label">En semaine</span>${segT('tempsSemaine', [['15','15 min'],['30','30 min'],['45','45 min +']])}</div>
       <div class="field"><span class="label">Le week-end</span>${segT('tempsWeekend', [['30','30 min'],['60','1 h'],['90','1 h 30 +']])}</div>
-      <label class="toggle green" for="midi"><span class="opt-t" style="flex:1"><b>Midis à la maison en semaine</b><small>Sinon on prévoit seulement les soirs, ou des gamelles</small></span>
-      <input id="midi" type="checkbox" data-check="midiMaison" ${f.midiMaison ? 'checked' : ''}></label></div>`;
+      <div class="field"><span class="label">Midis en semaine</span>${segT('midi', [['non','Pas prévus'],['maison','À la maison'],['gamelle','Gamelle']])}</div>
+      <label class="toggle green" for="leger"><span class="opt-t" style="flex:1"><b>Soirs plus légers</b><small>Viande, poisson et féculents le midi ; salades, soupes et légumes le soir</small></span>
+      <input id="leger" type="checkbox" data-check="soirLeger" ${f.soirLeger ? 'checked' : ''}></label>
+      ${f.soirLeger && f.midi === 'non' ? '<p class="note">Sans midis prévus en semaine, la viande et le poisson ne seront servis que le week-end. Choisis « Gamelle » ou « À la maison » pour les répartir sur la semaine.</p>' : ''}</div>`;
   }
   h += `<div class="spacer"></div><p class="error" role="alert">${esc(error)}</p>
     <div class="actions"><button class="btn" data-act="next">${view.step === total-1 ? 'Terminer' : 'Continuer'}</button></div>`;
@@ -384,7 +386,8 @@ function renderHome(){
       <div class="card"><div class="chips">
         <span class="tag">${esc(f.budget)} € / semaine</span><span class="tag">${bio}</span>
         <span class="tag">${f.tempsSemaine} min en semaine</span><span class="tag">${f.tempsWeekend === '90' ? '1 h 30 +' : f.tempsWeekend === '60' ? '1 h' : '30 min'} le week-end</span>
-        <span class="tag">${f.midiMaison ? 'Midis + soirs' : 'Soirs seulement'}</span>
+        <span class="tag">${({non:'Soirs seulement', maison:'Midis + soirs', gamelle:'Gamelles + soirs'})[midiMode(f)]}</span>
+        ${f.soirLeger ? '<span class="tag">Soirs légers</span>' : ''}
         ${(f.cuisines || []).length ? (f.cuisines.map(id => `<span class="tag">${CUISINES.find(c => c.id === id).t}</span>`).join('') + (f.cuisineStrict ? '<span class="tag">Uniquement</span>' : '')) : '<span class="tag">Toutes cuisines</span>'}</div>
         <button class="link" style="align-self:flex-start" data-act="foyer">Modifier</button></div>
       <div class="actions">${S.plan ? `<button class="btn" data-act="menus">Voir les menus de la semaine</button><button class="btn ghost" data-act="courses">Liste de courses</button>` : `<button class="btn" data-act="regen">Générer les menus de la semaine</button>`}</div>`
@@ -448,8 +451,17 @@ const ING = {
   oeuf:['Œufs',C,'pc',0.3,['oeufs']], lait:['Lait',C,'ml',1.1,['lactose']], creme:['Crème',C,'ml',4.5,['lactose']], emmental:['Emmental râpé',C,'g',10,['lactose']],
   mozza:['Mozzarella',C,'g',9,['lactose']], feta:['Feta',C,'g',13,['lactose']], yaourt:['Yaourt nature',C,'pc',0.25,['lactose']], beurre:['Beurre',C,'g',10,['lactose']],
   tofu:['Tofu',C,'g',9,['soja']], parmesan:['Parmesan',C,'g',18,['lactose']],
-  nouilles:['Nouilles de blé',E,'g',4,['gluten']], crevettes:['Crevettes décortiquées',F,'g',16,['crustaces']]
+  nouilles:['Nouilles de blé',E,'g',4,['gluten']], crevettes:['Crevettes décortiquées',F,'g',16,['crustaces']],
+  betterave:['Betteraves cuites',L,'g',3.5], avocat:['Avocats',L,'pc',1.2], chevre:['Bûche de chèvre',C,'g',14,['lactose']],
+  mais:['Maïs en boîte',E,'g',4], olive:['Olives',E,'g',12]
 };
+// Plats adaptés au soir léger : pas de viande ni de poisson, peu ou pas de féculents
+const LIGHT = new Set(['shakshuka','ratatouille','grecque','chevre','hiver','veloute-butternut','omelette','gratin-courgettes','veloute-cf','bouillon-asie','cf-roti','mexicaine','caprese']);
+// Plats qui ne se transportent pas bien en gamelle
+const NOBOX = new Set(['soupe','veloute-butternut','veloute-cf','bouillon-asie','chevre','omelette']);
+// Poids de légumes (g par unité) pour décider d'ajouter une salade verte en accompagnement
+const VEG_W = {carotte:1,courgette:1,tomate:1,poivron:1,brocoli:1,butternut:1,champignon:1,aubergine:1,poireau:1,haricotvert:1,epinard:1,petitpois:1,tomconc:0.7,betterave:1,salade:300,concombre:300,choufleur:800,avocat:150};
+const SIDE = {salade:0.2, huile:5};
 const CUISINES = [
   {id:'fr', t:'Française'}, {id:'it', t:'Italienne'}, {id:'med', t:'Méditerranée et Orient'},
   {id:'asie', t:'Asiatique'}, {id:'inde', t:'Indienne'}, {id:'mex', t:'Mexicaine'}
@@ -459,7 +471,9 @@ const CUISINE_OF = {
   'gratin-cf':'fr', quiche:'fr', cabillaud:'fr', soupe:'fr', wraps:'mex', 'pates-thon':'it', cantonais:'asie', shakshuka:'med',
   'salade-pc':'med', lasagnes:'it', 'poulet-roti':'fr', tofu:'asie', 'curry-pc':'inde', butternut:'fr', dinde:'fr', sardines:'fr',
   pizza:'it', parmentier:'fr', ratatouille:'fr', 'lentilles-porc':'fr', 'gratin-pates':'fr',
-  nouilles:'asie', crevettes:'asie', 'curry-vert':'asie', risotto:'it', minestrone:'it', couscous:'med', taboule:'med', quesadillas:'mex'
+  nouilles:'asie', crevettes:'asie', 'curry-vert':'asie', risotto:'it', minestrone:'it', couscous:'med', taboule:'med', quesadillas:'mex',
+  nicoise:'fr', cesar:'it', 'salade-lentilles':'fr', grecque:'med', chevre:'fr', hiver:'fr', 'veloute-butternut':'fr', omelette:'fr',
+  'gratin-courgettes':'fr', 'veloute-cf':'fr', 'bouillon-asie':'asie', 'cf-roti':'inde', mexicaine:'mex', caprese:'it'
 };
 const CATS = [L, V, C, E, F, B];
 // [id, nom, minutes, famille, ingrédients par portion adulte]
@@ -478,7 +492,7 @@ const RECIPES = [
   ['wraps','Wraps poulet crudités',15,'volaille',{tortilla:2,poulet:100,tomate:80,salade:0.15,yaourt:0.3,concombre:0.25}],
   ['pates-thon','Pâtes thon tomate',15,'poisson',{pates:90,thon:60,tomconc:120,oignon:30,huile:5}],
   ['cantonais','Riz cantonais',30,'charcuterie',{riz:70,oeuf:1,jambon:40,petitpois:80,oignon:30,soja:10,huile:5}],
-  ['shakshuka','Shakshuka et pain',30,'oeuf',{oeuf:2,tomconc:200,poivron:100,oignon:50,epices:2,baguette:0.25}],
+  ['shakshuka','Shakshuka',30,'oeuf',{oeuf:2,tomconc:200,poivron:100,oignon:50,epices:2}],
   ['salade-pc','Salade pois chiches, quinoa et feta',15,'legumineuse',{poischiche:120,tomate:100,concombre:0.3,feta:40,quinoa:50,huile:10,citron:0.25}],
   ['lasagnes','Lasagnes',90,'viande',{lasagne:80,boeuf:90,tomconc:150,lait:100,beurre:10,emmental:30,oignon:30}],
   ['poulet-roti','Cuisses de poulet rôties, pommes de terre, carottes',60,'volaille',{cuisse:250,pdt:200,carotte:120,huile:10,ail:5}],
@@ -489,7 +503,7 @@ const RECIPES = [
   ['sardines','Sardines, pommes de terre vapeur, salade',15,'poisson',{sardine:90,pdt:200,salade:0.25,huile:10,citron:0.2}],
   ['pizza','Pizza maison aux légumes',60,'vege',{pizza:0.33,tomconc:80,mozza:60,poivron:60,champignon:50}],
   ['parmentier','Hachis parmentier',60,'viande',{boeuf:90,pdt:250,lait:60,beurre:10,oignon:40,emmental:15}],
-  ['ratatouille','Ratatouille, œufs au plat, semoule',45,'oeuf',{courgette:100,aubergine:100,poivron:80,tomate:100,oignon:40,oeuf:2,semoule:60,huile:10}],
+  ['ratatouille','Ratatouille et œufs au plat',45,'oeuf',{courgette:120,aubergine:120,poivron:80,tomate:100,oignon:40,oeuf:2,huile:10}],
   ['lentilles-porc','Échine de porc aux lentilles',45,'viande',{echine:120,lentille:70,carotte:80,oignon:40,bouillon:0.5}],
   ['gratin-pates','Gratin de pâtes au brocoli',30,'vege',{pates:80,brocoli:150,creme:40,emmental:30}],
   ['nouilles','Nouilles sautées au poulet et légumes',30,'volaille',{nouilles:80,poulet:100,carotte:60,poivron:60,soja:15,huile:10}],
@@ -499,8 +513,28 @@ const RECIPES = [
   ['minestrone','Minestrone aux haricots',30,'legumineuse',{haricotrouge:60,courgette:80,carotte:60,tomconc:100,pates:40,poireau:50,bouillon:0.5}],
   ['couscous','Couscous de légumes aux pois chiches',60,'legumineuse',{semoule:70,poischiche:80,courgette:100,carotte:100,tomconc:80,oignon:30,epices:3}],
   ['taboule','Taboulé au poulet',15,'volaille',{semoule:60,tomate:100,concombre:0.25,poulet:100,citron:0.25,huile:10}],
-  ['quesadillas','Quesadillas haricots et fromage',15,'legumineuse',{tortilla:2,haricotrouge:80,emmental:30,poivron:50,tomate:50}]
-].map(([id,name,min,type,ing]) => ({id,name,min,type,ing,cuisine:CUISINE_OF[id] || 'fr'}));
+  ['quesadillas','Quesadillas haricots et fromage',15,'legumineuse',{tortilla:2,haricotrouge:80,emmental:30,poivron:50,tomate:50}],
+  // Salades composées complètes (plutôt le midi)
+  ['nicoise','Salade niçoise',30,'poisson',{thon:60,oeuf:1,tomate:100,haricotvert:80,pdt:120,salade:0.2,olive:15,huile:10}],
+  ['cesar','Salade César au poulet',30,'volaille',{poulet:110,salade:0.3,parmesan:15,baguette:0.15,yaourt:0.3,citron:0.15,huile:5}],
+  ['salade-lentilles','Salade de lentilles, œuf mollet',30,'legumineuse',{lentille:70,oeuf:1,carotte:60,oignon:20,salade:0.15,huile:10}],
+  // Soirs légers
+  ['grecque','Salade grecque',15,'vege',{tomate:150,concombre:0.35,feta:50,oignon:20,olive:15,huile:10}],
+  ['chevre','Salade de chèvre chaud',15,'vege',{salade:0.3,chevre:50,baguette:0.12,tomate:80,huile:10}],
+  ['hiver','Salade composée carottes, betterave, œuf dur',15,'oeuf',{carotte:100,betterave:100,oeuf:1.5,salade:0.2,emmental:20,huile:10}],
+  ['veloute-butternut','Velouté de butternut et salade verte',30,'vege',{butternut:300,oignon:30,creme:30,bouillon:0.3,salade:0.2,emmental:20}],
+  ['omelette','Omelette aux champignons et salade verte',15,'oeuf',{oeuf:2.5,champignon:100,salade:0.25,huile:10,emmental:15}],
+  ['gratin-courgettes','Gratin de courgettes',45,'oeuf',{courgette:300,oeuf:1,creme:40,emmental:30}],
+  ['veloute-cf','Velouté de chou-fleur, œuf mollet',30,'oeuf',{choufleur:0.3,lait:100,bouillon:0.3,oeuf:1}],
+  ['bouillon-asie','Bouillon asiatique au tofu et légumes',30,'legumineuse',{bouillon:0.5,tofu:100,carotte:80,champignon:80,poireau:80,soja:10}],
+  ['cf-roti','Chou-fleur rôti aux épices, raïta',45,'vege',{choufleur:0.35,epices:3,huile:10,yaourt:0.5,concombre:0.25}],
+  ['mexicaine','Salade mexicaine à l’avocat',15,'vege',{salade:0.2,avocat:0.5,tomate:100,poivron:80,mais:50,citron:0.25,huile:5}],
+  ['caprese','Caprese et légumes grillés',30,'vege',{tomate:150,mozza:60,courgette:100,aubergine:100,huile:15}]
+].map(([id,name,min,type,ing]) => ({id,name,min,type,ing,cuisine:CUISINE_OF[id] || 'fr',light:LIGHT.has(id),nobox:NOBOX.has(id)}));
+function vegGrams(r){ let g = 0; for(const k in r.ing) if(VEG_W[k]) g += r.ing[k] * VEG_W[k]; return g; }
+function hasSide(r){ return !('salade' in r.ing) && vegGrams(r) < 150; }
+function mealIng(r){ if(!hasSide(r)) return r.ing; const o = {...r.ing}; for(const k in SIDE) o[k] = (o[k] || 0) + SIDE[k]; return o; }
+function midiMode(f){ f = f || S.foyer; return f.midi || (f.midiMaison ? 'maison' : 'non'); }
 const TYPE_LABEL = {volaille:'Volaille', viande:'Viande', charcuterie:'Charcuterie', poisson:'Poisson', oeuf:'Œufs', legumineuse:'Légumineuses', vege:'Végétarien'};
 const VEGE_TYPES = ['oeuf','legumineuse','vege'];
 const MEAT_TYPES = ['volaille','viande','charcuterie'];
@@ -548,12 +582,17 @@ function bioFactor(cat){
 }
 function unitPrice(k){ return (S.prices && S.prices[k] != null) ? S.prices[k] : ING[k][3]; }
 function lineCost(k, qty){ const it = ING[k]; const base = it[2] === 'pc' ? qty : qty / 1000; return base * unitPrice(k) * bioFactor(it[1]); }
-function recipeCost(r, portions){ let c = 0; for(const k in r.ing) c += lineCost(k, r.ing[k] * portions); return c; }
+function recipeCost(r, portions){ const ing = mealIng(r); let c = 0; for(const k in ing) c += lineCost(k, ing[k] * portions); return c; }
+function slotOk(r, slot){
+  if(slot.box && r.nobox) return false;
+  if(S.foyer.soirLeger && slot.meal === 'soir' && !r.light) return false;
+  return true;
+}
 function slotsOf(){
-  const out = [];
+  const out = [], mode = midiMode();
   DAYS.forEach((d,i) => {
     const we = i >= 5;
-    if(we || S.foyer.midiMaison) out.push({day:i, meal:'midi', max:+(we ? S.foyer.tempsWeekend : S.foyer.tempsSemaine)});
+    if(we || mode !== 'non') out.push({day:i, meal:'midi', box: !we && mode === 'gamelle', max:+(we ? S.foyer.tempsWeekend : S.foyer.tempsSemaine)});
     out.push({day:i, meal:'soir', max:+(we ? S.foyer.tempsWeekend : S.foyer.tempsSemaine)});
   });
   return out;
@@ -564,7 +603,7 @@ function capsOk(type, counts, h){
   if((type === 'viande' || type === 'charcuterie') && counts.viande + counts.charcuterie >= 3) return false;
   if(type === 'charcuterie' && counts.charcuterie >= 1) return false;
   if(type === 'poisson' && counts.poisson >= 3) return false;
-  if(type === 'oeuf' && counts.oeuf >= 3) return false;
+  if(type === 'oeuf' && counts.oeuf >= (S.foyer.soirLeger ? 4 : 3)) return false;
   return true;
 }
 function countTypes(plan, skipIndex){
@@ -575,7 +614,8 @@ function countTypes(plan, skipIndex){
 function pick(slot, plan, index, h, exclude){
   const counts = countTypes(plan, index);
   const used = new Set(plan.filter((m,i) => i !== index && m.r).map(m => m.r));
-  let pool = RECIPES.filter(r => r.min <= slot.max && compatible(r, h) && r.id !== exclude);
+  let pool = RECIPES.filter(r => r.min <= slot.max && compatible(r, h) && slotOk(r, slot) && r.id !== exclude);
+  if(!pool.length) pool = RECIPES.filter(r => compatible(r, h) && slotOk(r, slot) && r.id !== exclude);
   if(!pool.length) pool = RECIPES.filter(r => compatible(r, h) && r.id !== exclude);
   const prefs = cuisinePrefs();
   // Alternance des styles : on évite la même cuisine qu'au repas d'avant ou d'après, et on étale
@@ -591,14 +631,18 @@ function pick(slot, plan, index, h, exclude){
     let s = Math.random();
     if(r.type === 'poisson' && counts.poisson < 2) s += 0.7;
     if(r.type === 'legumineuse' && counts.legumineuse < 2) s += 0.7;
+    if(r.type === 'legumineuse' && counts.legumineuse >= 3) s -= 0.6;
+    const meat = counts.volaille + counts.viande + counts.charcuterie;
+    if(!h.vege && MEAT_TYPES.includes(r.type) && meat < (h.flexi ? 2 : 4)) s += 0.5;
     if(prefs.length && prefs.includes(r.cuisine)) s += 0.9;
     if(near.includes(r.cuisine)) s -= 0.8;
     s -= 0.2 * (cCount[r.cuisine] || 0);
+    if(S.foyer.soirLeger && slot.meal === 'midi' && !r.light) s += 0.8;
     return {r, s};
   }).sort((a,b) => b.s - a.s);
   return scored.length ? scored[0].r.id : null;
 }
-function budgetTarget(){ return +S.foyer.budget * (S.foyer.midiMaison ? 0.8 : 0.65); }
+function budgetTarget(){ return +S.foyer.budget * (midiMode() !== 'non' ? 0.8 : 0.65); }
 function planCost(plan, h){ return plan.reduce((t,m) => t + (m.r ? recipeCost(RECIPES.find(r => r.id === m.r), h.portions) : 0), 0); }
 function generate(){
   const h = household();
@@ -612,7 +656,7 @@ function generate(){
     let swapped = false;
     for(const [c,i] of order){
       const counts = countTypes(plan, i), used = new Set(plan.map(m => m.r));
-      const cheaper = RECIPES.filter(r => r.min <= plan[i].max && compatible(r,h) && !used.has(r.id) && capsOk(r.type, counts, h) && recipeCost(r, h.portions) < c - 0.5)
+      const cheaper = RECIPES.filter(r => r.min <= plan[i].max && compatible(r,h) && slotOk(r, plan[i]) && !used.has(r.id) && capsOk(r.type, counts, h) && recipeCost(r, h.portions) < c - 0.5)
         .sort((a,b) => recipeCost(a,h.portions) - recipeCost(b,h.portions));
       if(cheaper.length){ plan[i].r = cheaper[Math.floor(Math.random() * Math.min(3, cheaper.length))].id; swapped = true; break; }
     }
@@ -622,7 +666,7 @@ function generate(){
 }
 function shopping(){
   const h = household(), tot = {};
-  (S.plan || []).forEach(m => { if(!m.r) return; const r = RECIPES.find(x => x.id === m.r); for(const k in r.ing) tot[k] = (tot[k] || 0) + r.ing[k] * h.portions; });
+  (S.plan || []).forEach(m => { if(!m.r) return; const ing = mealIng(RECIPES.find(x => x.id === m.r)); for(const k in ing) tot[k] = (tot[k] || 0) + ing[k] * h.portions; });
   return tot;
 }
 function fmtQty(k, q){
@@ -665,13 +709,14 @@ function renderMenus(){
       const open = view.open === m.idx;
       const q = encodeURIComponent(r.name);
       const mine = S.links && S.links[r.id];
-      return `<div style="display:flex;flex-direction:column;gap:12px"><div class="person" style="align-items:flex-start"><span class="opt-t"><small style="text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:600">${m.meal === 'midi' ? 'Midi' : 'Soir'}</small>
-        <b>${r.name}</b><small>${CUISINES.find(c => c.id === r.cuisine).t} · ${r.min} min · ${TYPE_LABEL[r.type]} · ${euros(recipeCost(r, h.portions))}</small></span>
+      return `<div style="display:flex;flex-direction:column;gap:12px"><div class="person" style="align-items:flex-start"><span class="opt-t"><small style="text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:600">${m.meal === 'midi' ? (m.box ? 'Midi · gamelle' : 'Midi') : (S.foyer.soirLeger ? 'Soir léger' : 'Soir')}</small>
+        <b>${r.name}${hasSide(r) ? '<span style="font-weight:500;color:var(--primary)"> + salade verte</span>' : ''}</b><small>${CUISINES.find(c => c.id === r.cuisine).t} · ${r.min} min · ${TYPE_LABEL[r.type]} · ${euros(recipeCost(r, h.portions))}</small></span>
         <button class="link" data-act="swap" data-i="${m.idx}" aria-label="Changer le plat du ${d.toLowerCase()} ${m.meal}">Changer</button></div>
         <button class="link" style="align-self:flex-start;min-height:36px" data-act="open" data-i="${m.idx}" aria-expanded="${open}">${open ? 'Masquer la recette' : 'Ingrédients et recette'}</button>
         ${open ? `<div style="display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;background:var(--bg)">
           <small class="hint">Pour le foyer :</small>
-          <div class="chips">${Object.keys(r.ing).map(k => `<span class="tag" style="background:var(--surface);color:var(--fg);border:1px solid var(--line)">${ING[k][0]} · ${fmtQty(k, r.ing[k] * h.portions)}</span>`).join('')}</div>
+          <div class="chips">${Object.entries(mealIng(r)).map(([k,q]) => `<span class="tag" style="background:var(--surface);color:var(--fg);border:1px solid var(--line)">${ING[k][0]} · ${fmtQty(k, q * h.portions)}</span>`).join('')}</div>
+          ${hasSide(r) ? '<small class="hint">Salade verte et vinaigrette incluses, pour ajouter des légumes au plat.</small>' : ''}
           <div class="chips">
             ${mine ? `<a class="btn" style="display:inline-flex;align-items:center;min-height:44px;font-size:15px;text-decoration:none" href="${esc(mine)}" target="_blank" rel="noopener">Ma recette</a>` : ''}
             <a class="btn ${mine ? 'ghost' : ''}" style="display:inline-flex;align-items:center;min-height:44px;font-size:15px;text-decoration:none" href="https://www.marmiton.org/recettes/recherche.aspx?aqt=${q}" target="_blank" rel="noopener">Marmiton</a>
@@ -783,7 +828,7 @@ app.addEventListener('click', e => {
     else view = {name:'home'};
   }
   if(act === 'add') view = {name:'person', step:0, draft:blankPerson(), isNew:true};
-  if(act === 'foyer') view = {name:'foyer', step:0, draft:{...S.foyer}};
+  if(act === 'foyer') view = {name:'foyer', step:0, draft:{...S.foyer, midi:midiMode(S.foyer)}};
   if(act === 'home') view = {name:'home'};
   if(act === 'see') view = {name:'recap', id:b.dataset.id};
   if(act === 'edit'){ const p = S.people.find(x => x.id === b.dataset.id); view = {name:'person', step:0, draft:JSON.parse(JSON.stringify(p))}; }
