@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2F6B3F">
+<meta name="description" content="Menus équilibrés pour le foyer, selon le budget.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mieux Manger">
+<title>Mieux Manger</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+/* Layout : une colonne façon app mobile, une question par écran, action principale en bas */
+:root{
+  --bg:#F6F7F2; --surface:#FFFFFF; --line:#D9DED3; --track:#E3E7DD;
+  --fg:#1F2A22; --muted:#4A554D; --subtle:#5B665E;
+  --primary:#2F6B3F; --primary-hover:#25573A; --on-primary:#FFFFFF; --primary-soft:#E8F1E9; --primary-ink:#1F4A2B;
+  --accent:#C2471F; --accent-soft:#FFF1E8; --accent-ink:#6B4A38;
+  --gold:#C99A2E; --hero:#1F3D29; --on-hero:#FFFFFF; --hero-muted:#CFE3D3;
+  --error:#B3261E;
+  --display:'Bricolage Grotesque', 'Trebuchet MS', system-ui, sans-serif;
+  --body:'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111713; --surface:#1A221D; --line:#2F3B33; --track:#28322B;
+  --fg:#E8EEE7; --muted:#B9C4BB; --subtle:#A2AEA5;
+  --primary:#72C089; --primary-hover:#8ACF9E; --on-primary:#0E1A12; --primary-soft:#1E3326; --primary-ink:#BFE3C9;
+  --accent:#F08A5D; --accent-soft:#2D1F18; --accent-ink:#F2C6B1;
+  --gold:#E3BE5E; --hero:#1B3524; --on-hero:#F2F7F2; --hero-muted:#B9D6C1;
+  --error:#F2A39D; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#111713; --surface:#1A221D; --line:#2F3B33; --track:#28322B;
+  --fg:#E8EEE7; --muted:#B9C4BB; --subtle:#A2AEA5;
+  --primary:#72C089; --primary-hover:#8ACF9E; --on-primary:#0E1A12; --primary-soft:#1E3326; --primary-ink:#BFE3C9;
+  --accent:#F08A5D; --accent-soft:#2D1F18; --accent-ink:#F2C6B1;
+  --gold:#E3BE5E; --hero:#1B3524; --on-hero:#F2F7F2; --hero-muted:#B9D6C1;
+  --error:#F2A39D; color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px}
+*{box-sizing:border-box}
+button,input{font-family:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+.app{max-width:440px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;
+  padding-block:20px 28px;padding-left:max(20px, env(safe-area-inset-left, 0px));padding-right:max(20px, env(safe-area-inset-right, 0px))}
+.top{display:flex;align-items:center;gap:12px;min-height:44px}
+.icon-btn{width:44px;height:44px;border-radius:22px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;flex-shrink:0}
+.icon-btn svg{stroke:var(--fg)}
+.progress{flex:1;height:6px;border-radius:3px;background:var(--track);overflow:hidden}
+.progress>div{height:100%;background:var(--primary);border-radius:3px;transition:width .3s ease}
+.count{font-size:13px;font-weight:500;color:var(--subtle);font-variant-numeric:tabular-nums}
+.head{margin-top:36px;display:flex;flex-direction:column;gap:10px}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--subtle)}
+h1{margin:0;font-family:var(--display);font-weight:700;font-size:32px;line-height:1.1;text-wrap:balance}
+.lead{margin:0;font-size:16px;line-height:1.5;color:var(--muted)}
+.body{margin-top:28px;display:flex;flex-direction:column;gap:20px}
+.field{display:flex;flex-direction:column;gap:8px}
+.label{font-size:14px;font-weight:600}
+.hint{font-size:13px;color:var(--subtle);line-height:1.4}
+.input{height:56px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);padding:0 16px;font-size:17px;width:100%}
+.input:focus{border-color:var(--primary);outline:none}
+.unit{display:flex;align-items:center;gap:6px;height:56px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);padding:0 16px}
+.unit:focus-within{border-color:var(--primary)}
+.unit input{border:none;background:transparent;font-size:17px;width:100%;padding:0;outline:none}
+.unit span{font-size:15px;color:var(--subtle)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tile{min-height:96px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:16px;font-weight:500;cursor:pointer;padding:10px}
+.tile svg{stroke:var(--subtle)}
+.tile[aria-pressed="true"]{border:2px solid var(--primary);background:var(--primary-soft);font-weight:600}
+.tile[aria-pressed="true"] svg{stroke:var(--primary)}
+.seg{display:flex;gap:6px;padding:4px;border-radius:14px;background:var(--track)}
+.seg button{flex:1;min-height:44px;border-radius:11px;border:none;background:transparent;font-size:15px;font-weight:500;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);font-weight:600}
+.options{display:flex;flex-direction:column;gap:10px}
+.opt{min-height:68px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface);display:flex;align-items:center;gap:14px;padding:12px 16px;text-align:left;cursor:pointer;width:100%}
+.opt .dot{width:22px;height:22px;border-radius:11px;border:2px solid var(--line);flex-shrink:0;background:var(--surface)}
+.opt[aria-pressed="true"]{border:2px solid var(--primary);background:var(--primary-soft)}
+.opt[aria-pressed="true"] .dot{border:7px solid var(--primary)}
+.opt[disabled]{opacity:.5;cursor:not-allowed}
+.opt-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.opt-t b{font-size:16px;font-weight:600}
+.opt-t small{font-size:14px;color:var(--subtle);line-height:1.35}
+.toggle{min-height:64px;border-radius:16px;background:var(--accent-soft);display:flex;align-items:center;gap:14px;padding:12px 16px;cursor:pointer}
+.toggle .opt-t small{color:var(--accent-ink)}
+.toggle input{width:24px;height:24px;accent-color:var(--accent);margin:0;flex-shrink:0}
+.toggle.green{background:var(--primary-soft)}
+.toggle.green .opt-t small{color:var(--primary-ink)}
+.toggle.green input{accent-color:var(--primary)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:40px;padding:8px 14px;border-radius:20px;border:1.5px solid var(--line);background:var(--surface);font-size:15px;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.tag{font-size:14px;padding:7px 12px;border-radius:16px;background:var(--primary-soft);color:var(--primary-ink)}
+.tag.warn{background:var(--accent-soft);color:var(--accent-ink)}
+.error{color:var(--error);font-size:14px;font-weight:500;min-height:1em}
+.spacer{flex:1;min-height:28px}
+.actions{display:flex;flex-direction:column;gap:10px}
+.btn{min-height:56px;border-radius:28px;border:none;background:var(--primary);color:var(--on-primary);font-size:17px;font-weight:600;cursor:pointer;padding:0 20px}
+.btn:hover{background:var(--primary-hover)}
+.btn.ghost{background:transparent;border:1.5px solid var(--primary);color:var(--primary)}
+.btn.ghost:hover{background:var(--primary-soft)}
+.btn.text{background:transparent;color:var(--subtle);min-height:44px;font-size:15px;font-weight:500}
+.btn.danger{background:var(--error);color:var(--surface)}
+.hero{border-radius:20px;background:var(--hero);color:var(--on-hero);padding:22px 20px;display:flex;flex-direction:column;gap:6px}
+.hero .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.hero small{font-size:14px;color:var(--hero-muted);line-height:1.4}
+.big{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.big b{font-family:var(--display);font-weight:700;font-size:48px;line-height:1;font-variant-numeric:tabular-nums}
+.big span{font-size:16px;color:var(--hero-muted)}
+.card{border-radius:20px;background:var(--surface);border:1px solid var(--line);padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;gap:3px}
+.macros{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.macros div{display:flex;flex-direction:column;gap:2px}
+.macros span{font-size:13px;color:var(--subtle);display:flex;align-items:center;gap:6px}
+.macros i{width:8px;height:8px;border-radius:4px;display:inline-block}
+.macros b{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.person{display:flex;align-items:center;gap:14px}
+.avatar{width:44px;height:44px;border-radius:22px;background:var(--primary-soft);color:var(--primary-ink);font-family:var(--display);font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.person .opt-t{flex:1}
+.link{background:none;border:none;color:var(--primary);font-weight:600;font-size:15px;cursor:pointer;min-height:44px;padding:0 4px}
+.section-title{font-family:var(--display);font-size:20px;font-weight:700;margin:8px 0 0}
+.note{font-size:13px;color:var(--subtle);line-height:1.45;margin:0}
+@media (prefers-reduced-motion: reduce){.progress>div{transition:none}}
+</style>
+</head>
+<body>
+<main class="app" id="app"></main>
+
+<script>
+const KEY = 'mieux-manger.v1';
+const icons = {
+  back:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
+  adult:'<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
+  child:'<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="9" r="3"/><path d="M6.5 21c0-3.2 2.5-5.5 5.5-5.5s5.5 2.3 5.5 5.5"/></svg>'
+};
+const ACTIVITY = [
+  {id:'sedentaire', t:'Sédentaire', d:'Assis la plupart du temps', f:1.2},
+  {id:'legere', t:'Légère', d:'Marche, un peu de sport', f:1.375},
+  {id:'moderee', t:'Modérée', d:'Sport 2 à 3 fois par semaine', f:1.55},
+  {id:'intense', t:'Intense', d:'Entraînement quasi quotidien', f:1.725}
+];
+const GOALS = [
+  {id:'equilibre', t:'Manger plus équilibré', d:'Mêmes quantités, meilleure qualité', k:0},
+  {id:'maintien', t:'Garder mon poids', d:'Apports calés sur tes dépenses', k:0},
+  {id:'perte', t:'Perdre doucement', d:'Léger déficit, 0,5 kg/semaine maximum', k:-0.15},
+  {id:'muscle', t:'Prendre du muscle', d:'Un peu plus d’énergie et de protéines', k:0.1}
+];
+const DIETS = [
+  {id:'omnivore', t:'Omnivore', d:'Viande, poisson, tout'},
+  {id:'flexi', t:'Flexitarien', d:'Viande 2 à 3 fois par semaine'},
+  {id:'vege', t:'Végétarien', d:'Ni viande ni poisson'}
+];
+const ALLERGENS = ['Gluten','Lactose','Arachides','Fruits à coque','Œufs','Poisson','Crustacés','Soja','Sésame'];
+const BIO = [
+  {id:'non', t:'Pas de bio', d:'Priorité au prix'},
+  {id:'cles', t:'Quelques produits clés', d:'Fruits et légumes les plus traités en bio'},
+  {id:'max', t:'Le plus possible', d:'Autant de bio que le budget le permet'}
+];
+
+function blankPerson(){ return {id:String(Date.now()), prenom:'', type:'adulte', sexe:'homme', naissance:'', taille:'', poids:'', activite:'moderee', metier:false, objectif:'equilibre', regime:'omnivore', moinsSucre:true, evites:'', allergies:[], autreAllergie:''}; }
+function blankFoyer(){ return {budget:'', bio:'cles', tempsSemaine:'30', tempsWeekend:'60', midiMaison:false, cuisines:[], cuisineStrict:false, done:false}; }
+
+let S = load() || {people:[], foyer:blankFoyer()};
+let view = S.people.length ? {name:'home'} : {name:'person', step:0, draft:blankPerson(), isNew:true};
+let error = '';
+let confirmReset = false;
+
+function load(){ try{ const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : null; }catch(e){ return null; } }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmt(n){ return Math.round(n).toLocaleString('fr-FR'); }
+
+function age(dateStr){
+  if(!dateStr) return null;
+  const b = new Date(dateStr), n = new Date();
+  if(isNaN(b)) return null;
+  let a = n.getFullYear() - b.getFullYear();
+  const m = n.getMonth() - b.getMonth();
+  if(m < 0 || (m === 0 && n.getDate() < b.getDate())) a--;
+  return a;
+}
+function imc(p){ const t = +p.taille/100, w = +p.poids; return t && w ? w/(t*t) : null; }
+
+function needs(p){
+  const a = age(p.naissance);
+  if(p.type === 'enfant'){
+    if(a === null) return {child:true};
+    const bands = [[1,0],[4,35],[7,50],[11,70],[15,90],[18,100]];
+    let pct = 100; for(const [max,v] of bands){ if(a < max){ pct = v; break; } }
+    return {child:true, age:a, pct};
+  }
+  const w = +p.poids, h = +p.taille;
+  const bmr = 10*w + 6.25*h - 5*a + (p.sexe === 'homme' ? 5 : -161);
+  let f = ACTIVITY.find(x => x.id === p.activite).f + (p.metier ? 0.15 : 0);
+  f = Math.min(f, 1.95);
+  const tdee = bmr * f;
+  const g = GOALS.find(x => x.id === p.objectif);
+  let kcal = tdee * (1 + g.k);
+  if(kcal < bmr * 1.1) kcal = bmr * 1.1; // jamais en dessous du métabolisme de base
+  const protPerKg = (p.objectif === 'muscle' || p.objectif === 'perte') ? 1.6 : 1.2;
+  const prot = protPerKg * w;
+  const lip = kcal * 0.3 / 9;
+  const glu = Math.max(0, (kcal - prot*4 - lip*9) / 4);
+  return {kcal, prot, lip, glu, age:a,
+    split:[prot*4/kcal, glu*4/kcal, lip*9/kcal]};
+}
+
+function stepsFor(p){ return p.type === 'enfant' ? ['identite','corps','habitudes','allergies'] : ['identite','corps','activite','objectif','habitudes','allergies']; }
+
+/* ---------- Rendu ---------- */
+function topBar(pct, label, canBack){
+  return `<div class="top">
+    ${canBack ? `<button class="icon-btn" aria-label="Retour" data-act="back">${icons.back}</button>` : ''}
+    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><div style="width:${pct}%"></div></div>
+    <span class="count">${label}</span></div>`;
+}
+function head(eyebrow, title, lead){
+  return `<div class="head"><span class="eyebrow">${eyebrow}</span><h1>${title}</h1>${lead ? `<p class="lead">${lead}</p>` : ''}</div>`;
+}
+function optList(list, field, value, disabledFn){
+  return `<div class="options">${list.map(o => {
+    const dis = disabledFn ? disabledFn(o) : '';
+    return `<button class="opt" aria-pressed="${value === o.id}" data-set="${field}" data-val="${o.id}" ${dis ? 'disabled' : ''}>
+      <span class="dot" aria-hidden="true"></span><span class="opt-t"><b>${o.t}</b><small>${dis || o.d}</small></span></button>`;
+  }).join('')}</div>`;
+}
+
+function renderPersonStep(){
+  const p = view.draft, steps = stepsFor(p), id = steps[view.step];
+  const pct = (view.step + 1) / steps.length * 100;
+  const canBack = view.step > 0 || S.people.length > 0;
+  const name = p.prenom.trim() || 'cette personne';
+  let h = topBar(pct, `${view.step+1}/${steps.length}`, canBack);
+
+  if(id === 'identite'){
+    h += head('Profil', S.people.length ? 'Qui d’autre mange à la maison ?' : 'Qui mange à la maison ?',
+      S.people.length ? '' : 'On commence par la première personne. Tu pourras ajouter le reste du foyer ensuite.');
+    h += `<div class="body">
+      <div class="field"><label class="label" for="prenom">Prénom</label>
+        <input class="input" id="prenom" data-field="prenom" type="text" autocomplete="given-name" placeholder="ex. Maxime" value="${esc(p.prenom)}"></div>
+      <div class="field"><span class="label">C’est…</span>
+        <div class="grid2">
+          <button class="tile" aria-pressed="${p.type==='adulte'}" data-set="type" data-val="adulte">${icons.adult}Un adulte</button>
+          <button class="tile" aria-pressed="${p.type==='enfant'}" data-set="type" data-val="enfant">${icons.child}Un enfant</button>
+        </div><span class="hint">Moins de 18 ans : on adapte les portions, sans objectif de poids.</span></div></div>`;
+  }
+  if(id === 'corps'){
+    const child = p.type === 'enfant';
+    h += head('Corps', 'Quelques mesures', child ? 'Pour un enfant, la date de naissance suffit à adapter les portions.' : 'Elles servent uniquement à calculer les portions. Tout reste sur ton téléphone.');
+    h += `<div class="body">
+      ${child ? '' : `<div class="field"><span class="label">Sexe</span><div class="seg">
+        <button aria-pressed="${p.sexe==='homme'}" data-set="sexe" data-val="homme">Homme</button>
+        <button aria-pressed="${p.sexe==='femme'}" data-set="sexe" data-val="femme">Femme</button></div></div>`}
+      <div class="field"><label class="label" for="naissance">Date de naissance</label>
+        <input class="input" id="naissance" data-field="naissance" type="date" value="${esc(p.naissance)}"></div>
+      ${child ? '' : `<div class="grid2">
+        <div class="field"><label class="label" for="taille">Taille</label><div class="unit"><input id="taille" data-field="taille" inputmode="numeric" placeholder="178" value="${esc(p.taille)}"><span>cm</span></div></div>
+        <div class="field"><label class="label" for="poids">Poids</label><div class="unit"><input id="poids" data-field="poids" inputmode="decimal" placeholder="80" value="${esc(p.poids)}"><span>kg</span></div></div>
+      </div>`}</div>`;
+  }
+  if(id === 'activite'){
+    h += head('Mode de vie', `${esc(name)} bouge combien ?`);
+    h += `<div class="body">${optList(ACTIVITY, 'activite', p.activite)}
+      <label class="toggle" for="metier"><span class="opt-t" style="flex:1"><b>Métier physique</b><small>Chantier, port de charges, debout toute la journée</small></span>
+      <input id="metier" type="checkbox" data-check="metier" ${p.metier ? 'checked' : ''}></label></div>`;
+  }
+  if(id === 'objectif'){
+    const i = imc(p);
+    h += head('Objectif', 'Qu’est-ce qui compte le plus ?', 'Tu pourras changer d’objectif à tout moment.');
+    h += `<div class="body">${optList(GOALS, 'objectif', p.objectif, o => (o.id === 'perte' && i !== null && i < 20) ? 'Pas proposé : le poids actuel est déjà dans la zone basse' : '')}</div>`;
+  }
+  if(id === 'habitudes'){
+    h += head('Habitudes', 'Ce que mange ' + esc(name));
+    h += `<div class="body">${optList(DIETS, 'regime', p.regime)}
+      <label class="toggle green" for="sucre"><span class="opt-t" style="flex:1"><b>Moins de sucre</b><small>Moins de produits sucrés et de desserts industriels</small></span>
+      <input id="sucre" type="checkbox" data-check="moinsSucre" ${p.moinsSucre ? 'checked' : ''}></label>
+      <div class="field"><label class="label" for="evites">Aliments à éviter (goût)</label>
+        <input class="input" id="evites" data-field="evites" type="text" placeholder="ex. champignons, betterave" value="${esc(p.evites)}">
+        <span class="hint">Sépare par des virgules.</span></div></div>`;
+  }
+  if(id === 'allergies'){
+    h += head('Santé', 'Allergies ou intolérances ?', 'Ces aliments seront totalement exclus des menus de ' + esc(name) + '.');
+    h += `<div class="body"><div class="chips">${ALLERGENS.map(a => `<button class="chip" aria-pressed="${p.allergies.includes(a)}" data-allergen="${esc(a)}">${esc(a)}</button>`).join('')}</div>
+      <div class="field"><label class="label" for="autre">Autre</label>
+        <input class="input" id="autre" data-field="autreAllergie" type="text" placeholder="ex. kiwi" value="${esc(p.autreAllergie)}"></div>
+      <p class="note">En cas d’allergie sévère, vérifie toujours les étiquettes : l’app ne remplace pas un avis médical.</p></div>`;
+  }
+  h += `<div class="spacer"></div><p class="error" role="alert">${esc(error)}</p>
+    <div class="actions"><button class="btn" data-act="next">${view.step === steps.length - 1 ? 'Voir le récap' : 'Continuer'}</button></div>`;
+  return h;
+}
+
+function nutritionBlock(p, n){
+  if(n.child){
+    if(n.age === null) return '';
+    if(n.age < 1) return `<div class="hero"><small>Moins d’un an</small><b style="font-family:var(--display);font-size:24px">Repas à voir avec le pédiatre</b><small>La diversification suit un calendrier précis. L’app n’en tiendra pas compte dans les menus.</small></div>`;
+    return `<div class="hero"><div class="row"><small>Portion estimée</small><small>${n.age} an${n.age>1?'s':''}</small></div>
+      <div class="big"><b>${n.pct} %</b><span>d’une portion adulte</span></div>
+      <small>Repère approximatif par tranche d’âge, pour dimensionner les courses.</small></div>`;
+  }
+  const ac = ACTIVITY.find(x => x.id === p.activite).t.toLowerCase();
+  const go = GOALS.find(x => x.id === p.objectif).t.toLowerCase();
+  return `<div class="hero"><div class="row"><small>Besoin estimé</small><small>${n.age} ans</small></div>
+    <div class="big"><b>${fmt(n.kcal)}</b><span>kcal / jour</span></div>
+    <small>Activité ${ac}${p.metier ? ' + métier physique' : ''} · ${go}</small></div>
+    <div class="card"><div class="bar" aria-hidden="true">
+      <div style="width:${n.split[0]*100}%;background:var(--accent)"></div>
+      <div style="width:${n.split[1]*100}%;background:var(--primary)"></div>
+      <div style="width:${n.split[2]*100}%;background:var(--gold)"></div></div>
+    <div class="macros">
+      <div><span><i style="background:var(--accent)"></i>Protéines</span><b>${fmt(n.prot)} g</b></div>
+      <div><span><i style="background:var(--primary)"></i>Glucides</span><b>${fmt(n.glu)} g</b></div>
+      <div><span><i style="background:var(--gold)"></i>Lipides</span><b>${fmt(n.lip)} g</b></div></div></div>`;
+}
+function tagsFor(p){
+  const t = [`<span class="tag">${DIETS.find(d => d.id === p.regime).t}</span>`];
+  if(p.moinsSucre) t.push('<span class="tag">Moins de sucre</span>');
+  p.evites.split(',').map(s => s.trim()).filter(Boolean).forEach(s => t.push(`<span class="tag">Sans ${esc(s.toLowerCase())}</span>`));
+  [...p.allergies, ...(p.autreAllergie.trim() ? [p.autreAllergie.trim()] : [])].forEach(a => t.push(`<span class="tag warn">Allergie : ${esc(a.toLowerCase())}</span>`));
+  return `<div class="chips">${t.join('')}</div>`;
+}
+
+function renderRecap(){
+  const p = S.people.find(x => x.id === view.id);
+  const n = needs(p);
+  return topBar(100, 'Terminé', true) + head('Profil de ' + esc(p.prenom), 'Repères du jour') +
+    `<div class="body">${nutritionBlock(p, n)}${tagsFor(p)}
+    <p class="note">Estimation par la formule de Mifflin-St Jeor et ton niveau d’activité. C’est un repère pour les menus, pas un objectif à suivre à la calorie près.</p></div>
+    <div class="spacer"></div><div class="actions">
+      <button class="btn text" data-act="edit" data-id="${p.id}">Modifier ce profil</button>
+      <button class="btn ghost" data-act="add">Ajouter une personne</button>
+      <button class="btn" data-act="${S.foyer.done ? 'home' : 'foyer'}">${S.foyer.done ? 'Voir le foyer' : 'Passer au foyer et au budget'}</button></div>`;
+}
+
+function renderFoyer(){
+  const f = view.draft, total = 3;
+  let h = topBar((view.step+1)/total*100, `Foyer ${view.step+1}/${total}`, true);
+  if(view.step === 0){
+    h += head('Budget', 'Combien pour les courses ?', `Pour ${S.people.length} personne${S.people.length>1?'s':''}, par semaine.`);
+    h += `<div class="body"><div class="field"><label class="label" for="budget">Budget par semaine</label>
+      <div class="unit"><input id="budget" data-field="budget" inputmode="numeric" placeholder="ex. 90" value="${esc(f.budget)}"><span>€</span></div></div>
+      <div class="field"><span class="label">Le bio</span>${optList(BIO, 'bio', f.bio)}</div></div>`;
+  } else if(view.step === 2){
+    const sel = f.cuisines || [];
+    h += head('Envies', 'Quelles cuisines vous plaisent ?', 'Choisis-en autant que tu veux. Sans choix, l’app mélange tout.');
+    h += `<div class="body"><div class="chips">${CUISINES.map(c => `<button class="chip" aria-pressed="${sel.includes(c.id)}" data-cuisine="${c.id}">${c.t}</button>`).join('')}</div>
+      ${sel.length ? `<label class="toggle green" for="strict"><span class="opt-t" style="flex:1"><b>Seulement ces cuisines</b><small>Sinon elles reviennent plus souvent, avec quelques plats d’ailleurs</small></span>
+      <input id="strict" type="checkbox" data-check="cuisineStrict" ${f.cuisineStrict ? 'checked' : ''}></label>` : ''}</div>`;
+  } else {
+    const segT = (field, opts) => `<div class="seg">${opts.map(([v,l]) => `<button aria-pressed="${f[field]===v}" data-set="${field}" data-val="${v}">${l}</button>`).join('')}</div>`;
+    h += head('Cuisine', 'Combien de temps pour cuisiner ?', 'Par repas, préparation et cuisson comprises.');
+    h += `<div class="body">
+      <div class="field"><span class="label">En semaine</span>${segT('tempsSemaine', [['15','15 min'],['30','30 min'],['45','45 min +']])}</div>
+      <div class="field"><span class="label">Le week-end</span>${segT('tempsWeekend', [['30','30 min'],['60','1 h'],['90','1 h 30 +']])}</div>
+      <label class="toggle green" for="midi"><span class="opt-t" style="flex:1"><b>Midis à la maison en semaine</b><small>Sinon on prévoit seulement les soirs, ou des gamelles</small></span>
+      <input id="midi" type="checkbox" data-check="midiMaison" ${f.midiMaison ? 'checked' : ''}></label></div>`;
+  }
+  h += `<div class="spacer"></div><p class="error" role="alert">${esc(error)}</p>
+    <div class="actions"><button class="btn" data-act="next">${view.step === total-1 ? 'Terminer' : 'Continuer'}</button></div>`;
+  return h;
+}
+
+function renderHome(){
+  const f = S.foyer;
+  const people = S.people.map(p => {
+    const n = needs(p);
+    const sub = n.child ? (n.age === null ? 'Enfant' : n.age < 1 ? 'Moins d’un an' : `Enfant · ${n.pct} % d’une portion`) : `${fmt(n.kcal)} kcal / jour`;
+    return `<div class="person"><span class="avatar" aria-hidden="true">${esc(p.prenom.trim().charAt(0).toUpperCase() || '?')}</span>
+      <span class="opt-t"><b>${esc(p.prenom)}</b><small>${sub}</small></span>
+      <button class="link" data-act="see" data-id="${p.id}">Voir</button></div>`;
+  }).join('');
+  const bio = BIO.find(b => b.id === f.bio).t;
+  return `<div class="head" style="margin-top:12px"><span class="eyebrow">Mon foyer</span><h1>Mieux manger, à la maison</h1></div>
+    <div class="body">
+      <div class="card">${people}<button class="btn ghost" data-act="add">Ajouter une personne</button></div>
+      ${f.done ? `<h2 class="section-title">Courses et cuisine</h2>
+      <div class="card"><div class="chips">
+        <span class="tag">${esc(f.budget)} € / semaine</span><span class="tag">${bio}</span>
+        <span class="tag">${f.tempsSemaine} min en semaine</span><span class="tag">${f.tempsWeekend === '90' ? '1 h 30 +' : f.tempsWeekend === '60' ? '1 h' : '30 min'} le week-end</span>
+        <span class="tag">${f.midiMaison ? 'Midis + soirs' : 'Soirs seulement'}</span>
+        ${(f.cuisines || []).length ? (f.cuisines.map(id => `<span class="tag">${CUISINES.find(c => c.id === id).t}</span>`).join('') + (f.cuisineStrict ? '<span class="tag">Uniquement</span>' : '')) : '<span class="tag">Toutes cuisines</span>'}</div>
+        <button class="link" style="align-self:flex-start" data-act="foyer">Modifier</button></div>
+      <div class="actions">${S.plan ? `<button class="btn" data-act="menus">Voir les menus de la semaine</button><button class="btn ghost" data-act="courses">Liste de courses</button>` : `<button class="btn" data-act="regen">Générer les menus de la semaine</button>`}</div>`
+      : `<div class="actions"><button class="btn" data-act="foyer">Régler budget et cuisine</button></div>`}
+    </div><div class="spacer"></div>
+    ${confirmReset ? `<div class="card"><b>Effacer tous les profils ?</b><p class="note">Les données enregistrées sur ce téléphone seront supprimées.</p>
+      <div class="grid2"><button class="btn ghost" data-act="cancel-reset">Annuler</button><button class="btn danger" data-act="reset">Effacer</button></div></div>`
+      : `<button class="btn text" data-act="ask-reset">Tout effacer</button>`}`;
+}
+
+function render(){
+  const root = document.getElementById('app');
+  let h = '';
+  if(view.name === 'person') h = renderPersonStep();
+  else if(view.name === 'recap') h = renderRecap();
+  else if(view.name === 'foyer') h = renderFoyer();
+  else if(view.name === 'menus') h = renderMenus();
+  else if(view.name === 'courses') h = renderCourses();
+  else h = renderHome();
+  root.innerHTML = h;
+}
+
+/* ---------- Validation ---------- */
+function validatePerson(){
+  const p = view.draft, id = stepsFor(p)[view.step];
+  if(id === 'identite' && !p.prenom.trim()) return 'Indique un prénom pour continuer.';
+  if(id === 'corps'){
+    const a = age(p.naissance);
+    if(a === null) return 'Indique la date de naissance.';
+    if(a < 0 || a > 110) return 'La date de naissance semble incorrecte.';
+    if(p.type === 'adulte' && a < 18) return 'Moins de 18 ans : reviens en arrière et choisis « Un enfant ».';
+    if(p.type === 'enfant' && a >= 18) return 'Cette personne a 18 ans ou plus : choisis « Un adulte ».';
+    if(p.type === 'adulte'){
+      const t = +String(p.taille).replace(',','.'), w = +String(p.poids).replace(',','.');
+      if(!(t >= 120 && t <= 230)) return 'Indique une taille entre 120 et 230 cm.';
+      if(!(w >= 30 && w <= 250)) return 'Indique un poids entre 30 et 250 kg.';
+      p.taille = String(t); p.poids = String(w);
+    }
+  }
+  if(id === 'objectif' && p.objectif === 'perte'){ const i = imc(p); if(i !== null && i < 20) return 'Choisis un autre objectif.'; }
+  return '';
+}
+
+/* ---------- Menus : données ---------- */
+// [nom, rayon, unité (g → prix au kg, ml → prix au litre, pc → prix à la pièce), prix moyen estimé, allergènes]
+const L='Fruits et légumes', V='Viandes et poissons', C='Crèmerie', E='Épicerie', F='Surgelés', B='Boulangerie';
+const ING = {
+  carotte:['Carottes',L,'g',1.6], courgette:['Courgettes',L,'g',2.8], oignon:['Oignons',L,'g',1.8], ail:['Ail',L,'g',8],
+  tomate:['Tomates',L,'g',3], poivron:['Poivrons',L,'g',4.5], brocoli:['Brocoli',L,'g',3.5], butternut:['Butternut',L,'g',2.2],
+  pdt:['Pommes de terre',L,'g',1.5], salade:['Salade',L,'pc',1.2], concombre:['Concombre',L,'pc',1], champignon:['Champignons',L,'g',5.5],
+  aubergine:['Aubergines',L,'g',3.5], choufleur:['Chou-fleur',L,'pc',2.8], poireau:['Poireaux',L,'g',2.8], citron:['Citrons',L,'pc',0.5],
+  haricotvert:['Haricots verts',F,'g',3], epinard:['Épinards',F,'g',2.6], petitpois:['Petits pois',F,'g',3], cabillaud:['Cabillaud',F,'g',13,['poisson']],
+  tomconc:['Tomates concassées',E,'g',2.5], riz:['Riz',E,'g',2.2], pates:['Pâtes',E,'g',1.8,['gluten']], semoule:['Semoule',E,'g',2,['gluten']],
+  lentille:['Lentilles vertes',E,'g',3.2], poischiche:['Pois chiches',E,'g',2.6], haricotrouge:['Haricots rouges',E,'g',2.6], quinoa:['Quinoa',E,'g',7.5],
+  coco:['Lait de coco',E,'ml',5], huile:['Huile d’olive',E,'ml',9], epices:['Épices',E,'g',30], bouillon:['Bouillon cube',E,'pc',0.15],
+  soja:['Sauce soja',E,'ml',6,['gluten','soja']], thon:['Thon en boîte',E,'g',15,['poisson']], sardine:['Sardines en boîte',E,'g',11,['poisson']],
+  tortilla:['Tortillas',E,'pc',0.3,['gluten']], lasagne:['Feuilles de lasagne',E,'g',3.5,['gluten']],
+  baguette:['Baguette',B,'pc',1.1,['gluten']], brisee:['Pâte brisée',B,'pc',1.5,['gluten','lactose']], pizza:['Pâte à pizza',B,'pc',1.6,['gluten']],
+  poulet:['Filets de poulet',V,'g',11], cuisse:['Cuisses de poulet',V,'g',6.5], dinde:['Escalopes de dinde',V,'g',12], boeuf:['Bœuf haché 5 %',V,'g',12],
+  echine:['Échine de porc',V,'g',8.5], jambon:['Jambon blanc',V,'g',14], lardons:['Lardons',V,'g',11], saumon:['Saumon',V,'g',22,['poisson']],
+  oeuf:['Œufs',C,'pc',0.3,['oeufs']], lait:['Lait',C,'ml',1.1,['lactose']], creme:['Crème',C,'ml',4.5,['lactose']], emmental:['Emmental râpé',C,'g',10,['lactose']],
+  mozza:['Mozzarella',C,'g',9,['lactose']], feta:['Feta',C,'g',13,['lactose']], yaourt:['Yaourt nature',C,'pc',0.25,['lactose']], beurre:['Beurre',C,'g',10,['lactose']],
+  tofu:['Tofu',C,'g',9,['soja']], parmesan:['Parmesan',C,'g',18,['lactose']],
+  nouilles:['Nouilles de blé',E,'g',4,['gluten']], crevettes:['Crevettes décortiquées',F,'g',16,['crustaces']]
+};
+const CUISINES = [
+  {id:'fr', t:'Française'}, {id:'it', t:'Italienne'}, {id:'med', t:'Méditerranée et Orient'},
+  {id:'asie', t:'Asiatique'}, {id:'inde', t:'Indienne'}, {id:'mex', t:'Mexicaine'}
+];
+const CUISINE_OF = {
+  'curry-poulet':'inde', bolo:'it', dahl:'inde', 'saumon-four':'fr', tortilla:'med', 'chili-sin':'mex', 'chili-con':'mex',
+  'gratin-cf':'fr', quiche:'fr', cabillaud:'fr', soupe:'fr', wraps:'mex', 'pates-thon':'it', cantonais:'asie', shakshuka:'med',
+  'salade-pc':'med', lasagnes:'it', 'poulet-roti':'fr', tofu:'asie', 'curry-pc':'inde', butternut:'fr', dinde:'fr', sardines:'fr',
+  pizza:'it', parmentier:'fr', ratatouille:'fr', 'lentilles-porc':'fr', 'gratin-pates':'fr',
+  nouilles:'asie', crevettes:'asie', 'curry-vert':'asie', risotto:'it', minestrone:'it', couscous:'med', taboule:'med', quesadillas:'mex'
+};
+const CATS = [L, V, C, E, F, B];
+// [id, nom, minutes, famille, ingrédients par portion adulte]
+const RECIPES = [
+  ['curry-poulet','Poulet curry coco, riz',30,'volaille',{poulet:120,coco:80,oignon:50,courgette:120,riz:70,epices:3,huile:5}],
+  ['bolo','Pâtes bolognaise maison',30,'viande',{boeuf:100,tomconc:150,oignon:40,carotte:60,pates:90,huile:5}],
+  ['dahl','Dahl de lentilles aux épinards',30,'legumineuse',{lentille:70,coco:50,tomconc:100,oignon:40,epinard:100,epices:3,riz:50}],
+  ['saumon-four','Saumon au four, haricots verts, pommes de terre',30,'poisson',{saumon:120,haricotvert:150,pdt:200,citron:0.25,huile:5}],
+  ['tortilla','Omelette espagnole et salade',30,'oeuf',{oeuf:2.5,pdt:200,oignon:50,salade:0.25,huile:10}],
+  ['chili-sin','Chili sin carne, riz',45,'legumineuse',{haricotrouge:120,tomconc:150,poivron:80,oignon:50,riz:60,epices:3}],
+  ['chili-con','Chili con carne, riz',45,'viande',{boeuf:80,haricotrouge:80,tomconc:150,poivron:60,oignon:40,riz:60,epices:3}],
+  ['gratin-cf','Gratin de chou-fleur au jambon',45,'charcuterie',{choufleur:0.3,lait:120,emmental:30,beurre:10,jambon:50}],
+  ['quiche','Quiche lorraine et salade',45,'charcuterie',{brisee:0.25,oeuf:1,creme:50,lardons:40,emmental:15,salade:0.25}],
+  ['cabillaud','Cabillaud, riz et brocoli',30,'poisson',{cabillaud:130,riz:70,brocoli:150,citron:0.25,huile:5}],
+  ['soupe','Soupe poireaux pommes de terre, tartines gratinées',30,'vege',{poireau:100,pdt:150,carotte:100,bouillon:0.5,emmental:25,baguette:0.25}],
+  ['wraps','Wraps poulet crudités',15,'volaille',{tortilla:2,poulet:100,tomate:80,salade:0.15,yaourt:0.3,concombre:0.25}],
+  ['pates-thon','Pâtes thon tomate',15,'poisson',{pates:90,thon:60,tomconc:120,oignon:30,huile:5}],
+  ['cantonais','Riz cantonais',30,'charcuterie',{riz:70,oeuf:1,jambon:40,petitpois:80,oignon:30,soja:10,huile:5}],
+  ['shakshuka','Shakshuka et pain',30,'oeuf',{oeuf:2,tomconc:200,poivron:100,oignon:50,epices:2,baguette:0.25}],
+  ['salade-pc','Salade pois chiches, quinoa et feta',15,'legumineuse',{poischiche:120,tomate:100,concombre:0.3,feta:40,quinoa:50,huile:10,citron:0.25}],
+  ['lasagnes','Lasagnes',90,'viande',{lasagne:80,boeuf:90,tomconc:150,lait:100,beurre:10,emmental:30,oignon:30}],
+  ['poulet-roti','Cuisses de poulet rôties, pommes de terre, carottes',60,'volaille',{cuisse:250,pdt:200,carotte:120,huile:10,ail:5}],
+  ['tofu','Tofu sauté aux légumes, riz',30,'legumineuse',{tofu:120,brocoli:100,carotte:80,poivron:60,soja:15,riz:70,huile:10}],
+  ['curry-pc','Curry de pois chiches aux épinards',30,'legumineuse',{poischiche:130,epinard:120,coco:60,tomconc:100,oignon:40,epices:3,riz:60}],
+  ['butternut','Butternut rôtie, quinoa et feta',45,'vege',{butternut:250,quinoa:70,feta:40,huile:10,salade:0.15}],
+  ['dinde','Dinde aux champignons, pâtes',30,'volaille',{dinde:120,champignon:100,creme:40,pates:80,huile:5}],
+  ['sardines','Sardines, pommes de terre vapeur, salade',15,'poisson',{sardine:90,pdt:200,salade:0.25,huile:10,citron:0.2}],
+  ['pizza','Pizza maison aux légumes',60,'vege',{pizza:0.33,tomconc:80,mozza:60,poivron:60,champignon:50}],
+  ['parmentier','Hachis parmentier',60,'viande',{boeuf:90,pdt:250,lait:60,beurre:10,oignon:40,emmental:15}],
+  ['ratatouille','Ratatouille, œufs au plat, semoule',45,'oeuf',{courgette:100,aubergine:100,poivron:80,tomate:100,oignon:40,oeuf:2,semoule:60,huile:10}],
+  ['lentilles-porc','Échine de porc aux lentilles',45,'viande',{echine:120,lentille:70,carotte:80,oignon:40,bouillon:0.5}],
+  ['gratin-pates','Gratin de pâtes au brocoli',30,'vege',{pates:80,brocoli:150,creme:40,emmental:30}],
+  ['nouilles','Nouilles sautées au poulet et légumes',30,'volaille',{nouilles:80,poulet:100,carotte:60,poivron:60,soja:15,huile:10}],
+  ['crevettes','Wok de crevettes aux légumes, riz',30,'poisson',{crevettes:100,brocoli:100,poivron:60,soja:15,riz:70,huile:10}],
+  ['curry-vert','Curry coco de légumes et tofu',30,'legumineuse',{tofu:100,coco:80,courgette:100,poivron:60,epices:3,riz:70}],
+  ['risotto','Risotto aux champignons',45,'vege',{riz:80,champignon:120,bouillon:0.5,parmesan:20,oignon:30,beurre:10}],
+  ['minestrone','Minestrone aux haricots',30,'legumineuse',{haricotrouge:60,courgette:80,carotte:60,tomconc:100,pates:40,poireau:50,bouillon:0.5}],
+  ['couscous','Couscous de légumes aux pois chiches',60,'legumineuse',{semoule:70,poischiche:80,courgette:100,carotte:100,tomconc:80,oignon:30,epices:3}],
+  ['taboule','Taboulé au poulet',15,'volaille',{semoule:60,tomate:100,concombre:0.25,poulet:100,citron:0.25,huile:10}],
+  ['quesadillas','Quesadillas haricots et fromage',15,'legumineuse',{tortilla:2,haricotrouge:80,emmental:30,poivron:50,tomate:50}]
+].map(([id,name,min,type,ing]) => ({id,name,min,type,ing,cuisine:CUISINE_OF[id] || 'fr'}));
+const TYPE_LABEL = {volaille:'Volaille', viande:'Viande', charcuterie:'Charcuterie', poisson:'Poisson', oeuf:'Œufs', legumineuse:'Légumineuses', vege:'Végétarien'};
+const VEGE_TYPES = ['oeuf','legumineuse','vege'];
+const MEAT_TYPES = ['volaille','viande','charcuterie'];
+const ALLERGEN_KEY = {'Gluten':'gluten','Lactose':'lactose','Œufs':'oeufs','Poisson':'poisson','Soja':'soja','Crustacés':'crustaces','Arachides':'arachides','Fruits à coque':'noix','Sésame':'sesame'};
+const DAYS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+
+/* ---------- Menus : calcul ---------- */
+function norm(s){ return String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim().replace(/s$/,''); }
+function portionsOf(p){
+  const n = needs(p);
+  if(n.child) return n.age === null ? 0.5 : n.pct / 100;
+  return Math.min(1.4, Math.max(0.75, n.kcal / 2200));
+}
+function household(){
+  const portions = S.people.reduce((t,p) => t + portionsOf(p), 0);
+  const allergens = new Set(), words = [];
+  let vege = false, flexi = false;
+  S.people.forEach(p => {
+    p.allergies.forEach(a => ALLERGEN_KEY[a] && allergens.add(ALLERGEN_KEY[a]));
+    [p.autreAllergie, ...p.evites.split(',')].map(s => s && norm(s)).filter(Boolean).forEach(w => words.push(w));
+    if(p.regime === 'vege') vege = true;
+    if(p.regime === 'flexi') flexi = true;
+  });
+  return {portions, allergens, words, vege, flexi};
+}
+function cuisinePrefs(){ return S.foyer.cuisines || []; }
+function cuisineOk(r){ const c = cuisinePrefs(); return !S.foyer.cuisineStrict || !c.length || c.includes(r.cuisine); }
+function compatible(r, h){
+  if(h.vege && !VEGE_TYPES.includes(r.type)) return false;
+  if(!cuisineOk(r)) return false;
+  for(const k in r.ing){
+    const it = ING[k];
+    if((it[4] || []).some(a => h.allergens.has(a))) return false;
+    const n = norm(it[0]);
+    if(h.words.some(w => n.includes(w) || w.includes(norm(k)))) return false;
+  }
+  if(h.words.some(w => norm(r.name).includes(w))) return false;
+  return true;
+}
+function bioFactor(cat){
+  const b = S.foyer.bio;
+  if(b === 'max') return 1.45;
+  if(b === 'cles' && cat === L) return 1.4;
+  return 1;
+}
+function unitPrice(k){ return (S.prices && S.prices[k] != null) ? S.prices[k] : ING[k][3]; }
+function lineCost(k, qty){ const it = ING[k]; const base = it[2] === 'pc' ? qty : qty / 1000; return base * unitPrice(k) * bioFactor(it[1]); }
+function recipeCost(r, portions){ let c = 0; for(const k in r.ing) c += lineCost(k, r.ing[k] * portions); return c; }
+function slotsOf(){
+  const out = [];
+  DAYS.forEach((d,i) => {
+    const we = i >= 5;
+    if(we || S.foyer.midiMaison) out.push({day:i, meal:'midi', max:+(we ? S.foyer.tempsWeekend : S.foyer.tempsSemaine)});
+    out.push({day:i, meal:'soir', max:+(we ? S.foyer.tempsWeekend : S.foyer.tempsSemaine)});
+  });
+  return out;
+}
+function capsOk(type, counts, h){
+  const meat = counts.volaille + counts.viande + counts.charcuterie;
+  if(MEAT_TYPES.includes(type) && meat >= (h.flexi ? 3 : 7)) return false;
+  if((type === 'viande' || type === 'charcuterie') && counts.viande + counts.charcuterie >= 3) return false;
+  if(type === 'charcuterie' && counts.charcuterie >= 1) return false;
+  if(type === 'poisson' && counts.poisson >= 3) return false;
+  if(type === 'oeuf' && counts.oeuf >= 3) return false;
+  return true;
+}
+function countTypes(plan, skipIndex){
+  const c = {volaille:0, viande:0, charcuterie:0, poisson:0, oeuf:0, legumineuse:0, vege:0};
+  plan.forEach((m,i) => { if(i !== skipIndex && m.r) c[RECIPES.find(r => r.id === m.r).type]++; });
+  return c;
+}
+function pick(slot, plan, index, h, exclude){
+  const counts = countTypes(plan, index);
+  const used = new Set(plan.filter((m,i) => i !== index && m.r).map(m => m.r));
+  let pool = RECIPES.filter(r => r.min <= slot.max && compatible(r, h) && r.id !== exclude);
+  if(!pool.length) pool = RECIPES.filter(r => compatible(r, h) && r.id !== exclude);
+  const prefs = cuisinePrefs();
+  // Alternance des styles : on évite la même cuisine qu'au repas d'avant ou d'après, et on étale
+  const cuisineAt = j => { const m = plan[j]; return m && m.r ? RECIPES.find(r => r.id === m.r).cuisine : null; };
+  const near = [cuisineAt(index - 1), cuisineAt(index + 1)];
+  const cCount = {};
+  plan.forEach((m,i) => { if(i !== index && m.r){ const c = RECIPES.find(r => r.id === m.r).cuisine; cCount[c] = (cCount[c] || 0) + 1; } });
+  const fresh = pool.filter(r => !used.has(r.id));
+  if(fresh.length) pool = fresh;
+  const ok = pool.filter(r => capsOk(r.type, counts, h));
+  if(ok.length) pool = ok;
+  const scored = pool.map(r => {
+    let s = Math.random();
+    if(r.type === 'poisson' && counts.poisson < 2) s += 0.7;
+    if(r.type === 'legumineuse' && counts.legumineuse < 2) s += 0.7;
+    if(prefs.length && prefs.includes(r.cuisine)) s += 0.9;
+    if(near.includes(r.cuisine)) s -= 0.8;
+    s -= 0.2 * (cCount[r.cuisine] || 0);
+    return {r, s};
+  }).sort((a,b) => b.s - a.s);
+  return scored.length ? scored[0].r.id : null;
+}
+function budgetTarget(){ return +S.foyer.budget * (S.foyer.midiMaison ? 0.8 : 0.65); }
+function planCost(plan, h){ return plan.reduce((t,m) => t + (m.r ? recipeCost(RECIPES.find(r => r.id === m.r), h.portions) : 0), 0); }
+function generate(){
+  const h = household();
+  const plan = slotsOf().map(s => ({...s, r:null}));
+  plan.forEach((m,i) => { m.r = pick(m, plan, i, h); });
+  // Ajustement au budget : on remplace le repas le plus cher par une alternative moins chère
+  const target = budgetTarget();
+  for(let guard = 0; guard < 30 && planCost(plan, h) > target; guard++){
+    const costs = plan.map(m => m.r ? recipeCost(RECIPES.find(r => r.id === m.r), h.portions) : 0);
+    const order = costs.map((c,i) => [c,i]).sort((a,b) => b[0]-a[0]);
+    let swapped = false;
+    for(const [c,i] of order){
+      const counts = countTypes(plan, i), used = new Set(plan.map(m => m.r));
+      const cheaper = RECIPES.filter(r => r.min <= plan[i].max && compatible(r,h) && !used.has(r.id) && capsOk(r.type, counts, h) && recipeCost(r, h.portions) < c - 0.5)
+        .sort((a,b) => recipeCost(a,h.portions) - recipeCost(b,h.portions));
+      if(cheaper.length){ plan[i].r = cheaper[Math.floor(Math.random() * Math.min(3, cheaper.length))].id; swapped = true; break; }
+    }
+    if(!swapped) break;
+  }
+  S.plan = plan; S.checked = {}; save();
+}
+function shopping(){
+  const h = household(), tot = {};
+  (S.plan || []).forEach(m => { if(!m.r) return; const r = RECIPES.find(x => x.id === m.r); for(const k in r.ing) tot[k] = (tot[k] || 0) + r.ing[k] * h.portions; });
+  return tot;
+}
+function fmtQty(k, q){
+  const u = ING[k][2];
+  if(u === 'pc') return Math.max(1, Math.ceil(q - 0.05)) + (k === 'oeuf' ? ' œufs' : ' pc');
+  if(q >= 1000) return (Math.round(q / 100) / 10).toLocaleString('fr-FR') + (u === 'g' ? ' kg' : ' l');
+  return Math.ceil(q / 10) * 10 + (u === 'g' ? ' g' : ' ml');
+}
+function euros(n){ return n.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €'; }
+function unitLabel(k){ const u = ING[k][2]; return u === 'g' ? '€/kg' : u === 'ml' ? '€/l' : '€/pièce'; }
+
+/* ---------- Menus : rendu ---------- */
+function renderMenus(){
+  const h = household(), plan = S.plan || [];
+  const total = planCost(plan, h), target = budgetTarget(), budget = +S.foyer.budget;
+  const c = countTypes(plan, -1);
+  const redMeat = c.viande + c.charcuterie;
+  const rep = [
+    ['Poisson', c.poisson, c.poisson >= 2, '2 fois / sem.'],
+    ['Légumineuses', c.legumineuse, c.legumineuse >= 2, '2 fois min.'],
+    ['Viande rouge, charcuterie', redMeat, redMeat <= 3, '3 fois max.']
+  ];
+  const overs = total > target;
+  let html = `<div class="top"><button class="icon-btn" aria-label="Retour" data-act="home">${icons.back}</button><span class="count" style="flex:1">Semaine</span>
+    <button class="link" data-act="regen">Nouvelle semaine</button></div>`;
+  html += head('Menus', 'La semaine du foyer', `${fmt(plan.length)} repas pour ${h.portions.toLocaleString('fr-FR', {maximumFractionDigits:1})} portions adultes par repas.`);
+  html += `<div class="body">
+    <div class="hero"><div class="row"><small>Coût estimé des repas</small><small>Budget ${euros(budget)}</small></div>
+      <div class="big"><b>${fmt(total)} €</b><span>/ semaine</span></div>
+      <small>${overs ? 'Au-dessus de la part prévue pour ces repas (' + fmt(target) + ' €). Change les plats les plus chers ou augmente le budget.' : 'Il reste environ ' + fmt(budget - total) + ' € pour les petits-déjeuners, fruits et produits de base.'}</small></div>
+    <div class="card"><b style="font-size:15px">Repères de la semaine</b>
+      ${rep.map(([l,n,ok,ref]) => `<div class="person" style="gap:10px"><span class="opt-t"><b style="font-size:15px">${l}</b><small>Repère : ${ref}</small></span>
+        <span class="tag ${ok ? '' : 'warn'}" style="font-variant-numeric:tabular-nums">${n} ${ok ? '✓' : '!'}</span></div>`).join('')}
+    </div>`;
+  DAYS.forEach((d,i) => {
+    const meals = plan.map((m,idx) => ({...m, idx})).filter(m => m.day === i);
+    html += `<h2 class="section-title">${d}</h2><div class="card" style="gap:16px">${meals.map(m => {
+      if(!m.r) return `<p class="note">Aucune recette compatible avec les contraintes du foyer.</p>`;
+      const r = RECIPES.find(x => x.id === m.r);
+      const open = view.open === m.idx;
+      const q = encodeURIComponent(r.name);
+      const mine = S.links && S.links[r.id];
+      return `<div style="display:flex;flex-direction:column;gap:12px"><div class="person" style="align-items:flex-start"><span class="opt-t"><small style="text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:600">${m.meal === 'midi' ? 'Midi' : 'Soir'}</small>
+        <b>${r.name}</b><small>${CUISINES.find(c => c.id === r.cuisine).t} · ${r.min} min · ${TYPE_LABEL[r.type]} · ${euros(recipeCost(r, h.portions))}</small></span>
+        <button class="link" data-act="swap" data-i="${m.idx}" aria-label="Changer le plat du ${d.toLowerCase()} ${m.meal}">Changer</button></div>
+        <button class="link" style="align-self:flex-start;min-height:36px" data-act="open" data-i="${m.idx}" aria-expanded="${open}">${open ? 'Masquer la recette' : 'Ingrédients et recette'}</button>
+        ${open ? `<div style="display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;background:var(--bg)">
+          <small class="hint">Pour le foyer :</small>
+          <div class="chips">${Object.keys(r.ing).map(k => `<span class="tag" style="background:var(--surface);color:var(--fg);border:1px solid var(--line)">${ING[k][0]} · ${fmtQty(k, r.ing[k] * h.portions)}</span>`).join('')}</div>
+          <div class="chips">
+            ${mine ? `<a class="btn" style="display:inline-flex;align-items:center;min-height:44px;font-size:15px;text-decoration:none" href="${esc(mine)}" target="_blank" rel="noopener">Ma recette</a>` : ''}
+            <a class="btn ${mine ? 'ghost' : ''}" style="display:inline-flex;align-items:center;min-height:44px;font-size:15px;text-decoration:none" href="https://www.marmiton.org/recettes/recherche.aspx?aqt=${q}" target="_blank" rel="noopener">Marmiton</a>
+            <a class="btn ghost" style="display:inline-flex;align-items:center;min-height:44px;font-size:15px;text-decoration:none" href="https://www.google.com/search?q=recette+${q}" target="_blank" rel="noopener">Chercher sur le web</a>
+          </div>
+          <div class="field"><label class="label" for="l-${r.id}" style="font-size:13px">${mine ? 'Ton lien pour ce plat' : 'Une recette préférée ? Colle son lien'}</label>
+            <div style="display:flex;gap:8px"><input class="input" style="height:44px;font-size:15px" id="l-${r.id}" data-link="${r.id}" type="url" placeholder="https://…" value="${esc(mine || '')}">
+            <button class="link" data-act="link-ok" data-k="${r.id}">OK</button></div>
+            <p class="error" role="alert">${view.linkErr === r.id ? 'Le lien doit commencer par https://' : ''}</p></div>
+        </div>` : ''}</div>`;
+    }).join('')}</div>`;
+  });
+  html += `<p class="note">Prix moyens estimés, à remplacer par tes prix dans la liste de courses. ${S.foyer.bio !== 'non' ? 'Surcoût bio inclus.' : ''}</p></div>
+    <div class="spacer"></div><div class="actions"><button class="btn" data-act="courses">Liste de courses</button></div>`;
+  return html;
+}
+function renderCourses(){
+  const tot = shopping(), checked = S.checked || {};
+  const keys = Object.keys(tot);
+  const total = keys.reduce((t,k) => t + lineCost(k, tot[k]), 0);
+  const left = keys.filter(k => !checked[k]).length;
+  let html = `<div class="top"><button class="icon-btn" aria-label="Retour" data-act="menus">${icons.back}</button><span class="count" style="flex:1">${left} article${left>1?'s':''} restant${left>1?'s':''}</span></div>`;
+  html += head('Courses', 'Liste de la semaine', `Total estimé : ${euros(total)}. Touche un prix pour mettre le tien.`);
+  html += `<div class="body">`;
+  CATS.forEach(cat => {
+    const items = keys.filter(k => ING[k][1] === cat).sort((a,b) => ING[a][0].localeCompare(ING[b][0], 'fr'));
+    if(!items.length) return;
+    html += `<h2 class="section-title">${cat}</h2><div class="card" style="gap:4px;padding:8px 16px">${items.map(k => {
+      const editing = view.edit === k, mine = S.prices && S.prices[k] != null;
+      return `<div class="person" style="min-height:56px;gap:12px">
+        <input type="checkbox" id="c-${k}" data-tick="${k}" ${checked[k] ? 'checked' : ''} style="width:24px;height:24px;accent-color:var(--primary);margin:0;flex-shrink:0">
+        <label for="c-${k}" class="opt-t" style="flex:1;cursor:pointer;${checked[k] ? 'text-decoration:line-through;opacity:.6' : ''}"><b style="font-size:15px">${ING[k][0]}</b><small>${fmtQty(k, tot[k])}</small></label>
+        ${editing ? `<div class="unit" style="height:44px;width:120px;padding:0 10px"><input id="p-${k}" data-price="${k}" inputmode="decimal" value="${String(unitPrice(k)).replace('.',',')}" aria-label="Prix ${ING[k][0]} en ${unitLabel(k)}"><span style="font-size:12px">${unitLabel(k)}</span></div>
+          <button class="link" data-act="price-ok" data-k="${k}">OK</button>`
+        : `<button class="link" style="font-variant-numeric:tabular-nums;${mine ? '' : 'color:var(--subtle);font-weight:500'}" data-act="price" data-k="${k}" aria-label="Modifier le prix de ${ING[k][0]}">${euros(lineCost(k, tot[k]))}</button>`}
+      </div>`;
+    }).join('')}</div>`;
+  });
+  html += `<p class="note">En gris : prix moyen estimé. En vert : ton prix. Tes prix sont gardés pour les semaines suivantes.</p></div>`;
+  return html;
+}
+/* ---------- Événements ---------- */
+const app = document.getElementById('app');
+app.addEventListener('input', e => {
+  if(e.target.dataset.price){ view.priceVal = e.target.value; return; }
+  if(e.target.dataset.link){ view.linkVal = e.target.value; return; }
+  const f = e.target.dataset.field; if(!f) return;
+  view.draft[f] = e.target.value;
+});
+app.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && e.target.dataset.price){ e.preventDefault(); commitPrice(e.target.dataset.price); render(); }
+});
+function commitPrice(k){
+  if(view.priceVal != null){
+    const v = parseFloat(String(view.priceVal).replace(',','.'));
+    S.prices = S.prices || {};
+    if(v > 0 && v < 1000) S.prices[k] = v;
+    save();
+  }
+  view.edit = null; view.priceVal = null;
+}
+app.addEventListener('change', e => {
+  const t = e.target.dataset.tick;
+  if(t){ S.checked = S.checked || {}; S.checked[t] = e.target.checked; save(); render(); return; }
+  const c = e.target.dataset.check; if(!c) return;
+  view.draft[c] = e.target.checked; render();
+});
+app.addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b || b.disabled) return;
+  error = '';
+  if(b.dataset.set){
+    view.draft[b.dataset.set] = b.dataset.val;
+    if(b.dataset.set === 'type' && view.draft.type === 'enfant'){ view.draft.objectif = 'equilibre'; view.draft.metier = false; }
+    return render();
+  }
+  if(b.dataset.cuisine){
+    const c = b.dataset.cuisine, list = view.draft.cuisines || [];
+    view.draft.cuisines = list.includes(c) ? list.filter(x => x !== c) : [...list, c];
+    if(!view.draft.cuisines.length) view.draft.cuisineStrict = false;
+    return render();
+  }
+  if(b.dataset.allergen){
+    const a = b.dataset.allergen, list = view.draft.allergies;
+    view.draft.allergies = list.includes(a) ? list.filter(x => x !== a) : [...list, a];
+    return render();
+  }
+  const act = b.dataset.act;
+  if(act === 'next'){
+    if(view.name === 'person'){
+      error = validatePerson(); if(error) return render();
+      if(view.step < stepsFor(view.draft).length - 1){ view.step++; }
+      else {
+        const i = S.people.findIndex(x => x.id === view.draft.id);
+        if(i >= 0) S.people[i] = view.draft; else S.people.push(view.draft);
+        save(); view = {name:'recap', id:view.draft.id};
+      }
+    } else if(view.name === 'foyer'){
+      if(view.step === 0){
+        const v = +String(view.draft.budget).replace(',','.');
+        if(!(v >= 10 && v <= 2000)){ error = 'Indique un budget entre 10 et 2 000 € par semaine.'; return render(); }
+        view.draft.budget = String(Math.round(v)); view.step++;
+      } else if(view.step === 1){ view.step++; }
+      else { view.draft.done = true; S.foyer = view.draft; save(); view = {name:'home'}; }
+    }
+  }
+  if(act === 'back'){
+    if(view.name === 'person'){ if(view.step > 0) view.step--; else view = {name:'home'}; }
+    else if(view.name === 'foyer'){ if(view.step > 0) view.step--; else view = {name:'home'}; }
+    else view = {name:'home'};
+  }
+  if(act === 'add') view = {name:'person', step:0, draft:blankPerson(), isNew:true};
+  if(act === 'foyer') view = {name:'foyer', step:0, draft:{...S.foyer}};
+  if(act === 'home') view = {name:'home'};
+  if(act === 'see') view = {name:'recap', id:b.dataset.id};
+  if(act === 'edit'){ const p = S.people.find(x => x.id === b.dataset.id); view = {name:'person', step:0, draft:JSON.parse(JSON.stringify(p))}; }
+  if(act === 'regen'){ generate(); view = {name:'menus'}; }
+  if(act === 'menus') view = {name:'menus'};
+  if(act === 'courses') view = {name:'courses'};
+  if(act === 'swap'){
+    const i = +b.dataset.i, h = household();
+    const next = pick(S.plan[i], S.plan, i, h, S.plan[i].r);
+    if(next){ S.plan[i].r = next; save(); }
+    render(); return;
+  }
+  if(act === 'price'){ if(view.edit) commitPrice(view.edit); view.edit = b.dataset.k; view.priceVal = null; render(); const el = document.getElementById('p-' + b.dataset.k); if(el){ el.focus(); el.select(); } return; }
+  if(act === 'price-ok'){ commitPrice(b.dataset.k); render(); return; }
+  if(act === 'open'){ const i = +b.dataset.i; view.open = view.open === i ? null : i; view.linkErr = null; view.linkVal = null; render(); return; }
+  if(act === 'link-ok'){
+    const k = b.dataset.k, v = String(view.linkVal ?? (S.links && S.links[k]) ?? '').trim();
+    S.links = S.links || {};
+    if(!v){ delete S.links[k]; view.linkErr = null; }
+    else if(/^https:\/\/\S+$/i.test(v)){ S.links[k] = v; view.linkErr = null; }
+    else { view.linkErr = k; render(); return; }
+    view.linkVal = null; save(); render(); return;
+  }
+  if(act === 'ask-reset') confirmReset = true;
+  if(act === 'cancel-reset') confirmReset = false;
+  if(act === 'reset'){ confirmReset = false; S = {people:[], foyer:blankFoyer()}; save(); view = {name:'person', step:0, draft:blankPerson(), isNew:true}; }
+  render();
+  window.scrollTo(0, 0);
+});
+render();
+</script>
+<script>
+if('serviceWorker' in navigator){ window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {})); }
+</script>
+</body>
+</html>
