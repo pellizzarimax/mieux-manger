@@ -157,7 +157,7 @@ const DIETS = [
   {id:'flexi', t:'Flexitarien', d:'Viande 2 à 3 fois par semaine'},
   {id:'vege', t:'Végétarien', d:'Ni viande ni poisson'}
 ];
-const ALLERGENS = ['Gluten','Lactose','Arachides','Fruits à coque','Œufs','Poisson','Crustacés','Soja','Sésame'];
+const ALLERGENS = ['Gluten','Lactose','Arachides','Fruits à coque','Œufs','Poisson','Crustacés','Mollusques','Soja','Sésame','Moutarde'];
 const BIO = [
   {id:'non', t:'Pas de bio', d:'Priorité au prix'},
   {id:'cles', t:'Quelques produits clés', d:'Fruits et légumes les plus traités en bio'},
@@ -352,7 +352,9 @@ function renderFoyer(){
     h += head('Envies', 'Quelles cuisines vous plaisent ?', 'Choisis-en autant que tu veux. Sans choix, l’app mélange tout.');
     h += `<div class="body"><div class="chips">${CUISINES.map(c => `<button class="chip" aria-pressed="${sel.includes(c.id)}" data-cuisine="${c.id}">${c.t}</button>`).join('')}</div>
       ${sel.length ? `<label class="toggle green" for="strict"><span class="opt-t" style="flex:1"><b>Seulement ces cuisines</b><small>Sinon elles reviennent plus souvent, avec quelques plats d’ailleurs</small></span>
-      <input id="strict" type="checkbox" data-check="cuisineStrict" ${f.cuisineStrict ? 'checked' : ''}></label>` : ''}</div>`;
+      <input id="strict" type="checkbox" data-check="cuisineStrict" ${f.cuisineStrict ? 'checked' : ''}></label>` : ''}
+      <label class="toggle" for="decouverte"><span class="opt-t" style="flex:1"><b>Un plat à découvrir chaque semaine</b><small>Au moins une recette que vous n’avez sans doute jamais faite</small></span>
+      <input id="decouverte" type="checkbox" data-check="decouverte" ${f.decouverte !== false ? 'checked' : ''}></label></div>`;
   } else {
     const segT = (field, opts) => `<div class="seg">${opts.map(([v,l]) => `<button aria-pressed="${f[field]===v}" data-set="${field}" data-val="${v}">${l}</button>`).join('')}</div>`;
     h += head('Cuisine', 'Combien de temps pour cuisiner ?', 'Par repas, préparation et cuisson comprises.');
@@ -453,7 +455,21 @@ const ING = {
   tofu:['Tofu',C,'g',9,['soja']], parmesan:['Parmesan',C,'g',18,['lactose']],
   nouilles:['Nouilles de blé',E,'g',4,['gluten']], crevettes:['Crevettes décortiquées',F,'g',16,['crustaces']],
   betterave:['Betteraves cuites',L,'g',3.5], avocat:['Avocats',L,'pc',1.2], chevre:['Bûche de chèvre',C,'g',14,['lactose']],
-  mais:['Maïs en boîte',E,'g',4], olive:['Olives',E,'g',12]
+  mais:['Maïs en boîte',E,'g',4], olive:['Olives',E,'g',12],
+  gingembre:['Gingembre',L,'g',12], patate:['Patates douces',L,'g',3], chou:['Chou vert',L,'pc',2.2], endive:['Endives',L,'g',3.5],
+  navet:['Navets',L,'g',2.5], pomme:['Pommes',L,'g',2.5], herbes:['Herbes fraîches (persil, coriandre, basilic)',L,'pc',1],
+  haricotblanc:['Haricots blancs',E,'g',3], poiscasse:['Pois cassés',E,'g',2.8], lentillecorail:['Lentilles corail',E,'g',3.8],
+  boulgour:['Boulgour',E,'g',3,['gluten']], polenta:['Polenta',E,'g',3], gnocchi:['Gnocchis',E,'g',4,['gluten']],
+  nouillesriz:['Nouilles de riz',E,'g',5], vermicelle:['Vermicelles de riz',E,'g',6], galetteriz:['Galettes de riz',E,'pc',0.1],
+  pesto:['Pesto',E,'g',18,['lactose','noix']], tahini:['Tahini (crème de sésame)',E,'g',14,['sesame']],
+  beurrecacahuete:['Beurre de cacahuète',E,'g',9,['arachides']], cacahuete:['Cacahuètes',E,'g',8,['arachides']],
+  noix:['Cerneaux de noix',E,'g',20,['noix']], moutarde:['Moutarde',E,'g',5,['moutarde']], miso:['Pâte miso',E,'g',15,['soja']],
+  painmie:['Pain de mie',B,'pc',0.12,['gluten']], galette:['Galettes de sarrasin',B,'pc',0.5], pita:['Pains pita',B,'pc',0.4,['gluten']],
+  naan:['Naans',B,'pc',0.8,['gluten','lactose']],
+  saucisse:['Saucisses de Toulouse',V,'g',10], merguez:['Merguez',V,'g',11], chorizo:['Chorizo',V,'g',18], boeufb:['Bœuf à braiser',V,'g',14],
+  boeufe:['Bœuf émincé',V,'g',20], magret:['Magret de canard',V,'g',24], boudin:['Boudin noir',V,'g',10],
+  colin:['Colin',F,'g',12,['poisson']], moules:['Moules',V,'g',5,['mollusques']],
+  reblochon:['Reblochon',C,'pc',7,['lactose']], ricotta:['Ricotta',C,'g',11,['lactose']], fromageblanc:['Fromage blanc',C,'g',3,['lactose']]
 };
 // Plats adaptés au soir léger : pas de viande ni de poisson, peu ou pas de féculents
 const LIGHT = new Set(['shakshuka','ratatouille','grecque','chevre','hiver','veloute-butternut','omelette','gratin-courgettes','veloute-cf','bouillon-asie','cf-roti','mexicaine','caprese']);
@@ -464,8 +480,9 @@ const VEG_W = {carotte:1,courgette:1,tomate:1,poivron:1,brocoli:1,butternut:1,ch
 const SIDE = {salade:0.2, huile:5};
 const CUISINES = [
   {id:'fr', t:'Française'}, {id:'it', t:'Italienne'}, {id:'med', t:'Méditerranée et Orient'},
-  {id:'asie', t:'Asiatique'}, {id:'inde', t:'Indienne'}, {id:'mex', t:'Mexicaine'}
+  {id:'asie', t:'Asiatique'}, {id:'inde', t:'Indienne'}, {id:'mex', t:'Mexicaine'}, {id:'afrique', t:'Africaine et créole'}
 ];
+const DISCOVER = new Set(['shakshuka','dahl','bouillon-asie','cf-roti','curry-vert']);
 const CUISINE_OF = {
   'curry-poulet':'inde', bolo:'it', dahl:'inde', 'saumon-four':'fr', tortilla:'med', 'chili-sin':'mex', 'chili-con':'mex',
   'gratin-cf':'fr', quiche:'fr', cabillaud:'fr', soupe:'fr', wraps:'mex', 'pates-thon':'it', cantonais:'asie', shakshuka:'med',
@@ -530,7 +547,94 @@ const RECIPES = [
   ['cf-roti','Chou-fleur rôti aux épices, raïta',45,'vege',{choufleur:0.35,epices:3,huile:10,yaourt:0.5,concombre:0.25}],
   ['mexicaine','Salade mexicaine à l’avocat',15,'vege',{salade:0.2,avocat:0.5,tomate:100,poivron:80,mais:50,citron:0.25,huile:5}],
   ['caprese','Caprese et légumes grillés',30,'vege',{tomate:150,mozza:60,courgette:100,aubergine:100,huile:15}]
-].map(([id,name,min,type,ing]) => ({id,name,min,type,ing,cuisine:CUISINE_OF[id] || 'fr',light:LIGHT.has(id),nobox:NOBOX.has(id)}));
+].map(([id,name,min,type,ing]) => ({id,name,min,type,ing,cuisine:CUISINE_OF[id] || 'fr',light:LIGHT.has(id),nobox:NOBOX.has(id),discover:DISCOVER.has(id),sweet:false}))
+.concat([
+  // [id, nom, minutes, famille, cuisine, repères (L = soir léger, N = pas en gamelle, D = à découvrir, S = sucré), ingrédients par portion adulte]
+  // Française
+  ['blanquette','Blanquette de dinde, riz',60,'volaille','fr','',{dinde:130,carotte:80,champignon:60,creme:30,riz:70,bouillon:0.5,oignon:30}],
+  ['boeuf-carottes','Bœuf carottes et pommes de terre',90,'viande','fr','',{boeufb:130,carotte:200,oignon:40,pdt:150,bouillon:0.5}],
+  ['saucisse-lentilles','Saucisses de Toulouse aux lentilles',45,'charcuterie','fr','',{saucisse:120,lentille:70,carotte:80,oignon:40,bouillon:0.5}],
+  ['cassoulet','Cassoulet express',60,'charcuterie','fr','',{saucisse:90,haricotblanc:80,tomconc:80,carotte:50,oignon:30,ail:3}],
+  ['tartiflette','Tartiflette et salade verte',60,'charcuterie','fr','',{pdt:250,reblochon:0.25,lardons:50,oignon:40,creme:20,salade:0.2}],
+  ['croque','Croque-monsieur et salade',15,'charcuterie','fr','',{painmie:4,jambon:50,emmental:30,beurre:10,salade:0.25}],
+  ['galette-complete','Galettes complètes jambon, œuf, fromage',30,'charcuterie','fr','',{galette:2,jambon:40,oeuf:1,emmental:30,salade:0.2}],
+  ['basquaise','Poulet basquaise, riz',45,'volaille','fr','',{cuisse:220,poivron:150,tomconc:120,oignon:40,riz:60,huile:5}],
+  ['pot-au-feu','Pot-au-feu',90,'viande','fr','N',{boeufb:140,carotte:120,poireau:100,navet:80,pdt:150,bouillon:0.5}],
+  ['dauphinois','Escalope de dinde et gratin dauphinois',60,'volaille','fr','',{dinde:120,pdt:220,lait:80,creme:30,ail:3}],
+  ['endives-jambon','Endives au jambon',45,'charcuterie','fr','',{endive:250,jambon:60,lait:100,beurre:10,emmental:25}],
+  ['colin-poireaux','Colin et fondue de poireaux, riz',30,'poisson','fr','',{colin:130,poireau:200,creme:20,riz:60}],
+  ['moules','Moules marinières, frites au four',45,'poisson','fr','N',{moules:400,oignon:30,creme:20,pdt:200,huile:10}],
+  ['parmentier-patate','Parmentier de patate douce au poulet',60,'volaille','fr','D',{poulet:100,patate:250,lait:40,beurre:10,emmental:15}],
+  ['quiche-poireaux','Quiche poireaux et chèvre',60,'vege','fr','',{brisee:0.25,poireau:150,chevre:30,oeuf:1,creme:40}],
+  ['pois-casses','Soupe de pois cassés',60,'legumineuse','fr','N',{poiscasse:80,carotte:80,oignon:30,bouillon:0.5}],
+  ['magret','Magret de canard, pommes de terre sarladaises',45,'viande','fr','',{magret:150,pdt:220,ail:3}],
+  ['boudin','Boudin noir aux pommes, purée',30,'charcuterie','fr','D',{boudin:130,pomme:150,pdt:200,lait:50,beurre:10}],
+  ['poulet-moutarde','Poulet à la moutarde, haricots verts et riz',30,'volaille','fr','',{poulet:130,creme:30,moutarde:10,haricotvert:150,riz:60}],
+  ['veloute-poireaux','Velouté de poireaux et œuf poché',30,'oeuf','fr','LN',{poireau:250,creme:20,bouillon:0.3,oeuf:1}],
+  ['salade-endives','Salade d’endives, pommes et noix',15,'vege','fr','L',{endive:200,pomme:100,noix:15,emmental:30,huile:10}],
+  ['soupe-legumes','Soupe de légumes maison et fromage blanc',45,'vege','fr','LN',{carotte:100,poireau:100,courgette:100,navet:60,bouillon:0.5,fromageblanc:100}],
+  ['piperade','Piperade et œufs',30,'oeuf','fr','L',{poivron:200,tomate:150,oignon:50,oeuf:2,huile:10}],
+  ['tian','Tian de légumes au chèvre',60,'vege','fr','L',{courgette:150,tomate:150,aubergine:100,chevre:40,huile:10}],
+  // Italienne
+  ['carbonara','Pâtes carbonara',15,'charcuterie','it','',{pates:90,lardons:50,oeuf:1,parmesan:15}],
+  ['pesto','Pâtes au pesto et haricots verts',15,'vege','it','',{pates:90,pesto:25,haricotvert:100,parmesan:10}],
+  ['gnocchi','Gnocchis sauce tomate et mozzarella',30,'vege','it','',{gnocchi:200,tomconc:150,mozza:50}],
+  ['parmigiana-poulet','Poulet parmigiana, pâtes',45,'volaille','it','',{poulet:120,tomconc:120,mozza:40,parmesan:10,pates:70}],
+  ['polenta','Polenta crémeuse aux champignons',30,'vege','it','D',{polenta:70,champignon:150,parmesan:20,creme:20}],
+  ['cannelloni','Cannellonis ricotta épinards',60,'vege','it','',{lasagne:70,ricotta:80,epinard:120,tomconc:120,emmental:20}],
+  ['frittata','Frittata aux légumes',30,'oeuf','it','L',{oeuf:2.5,courgette:120,poivron:60,parmesan:10,huile:5}],
+  ['pates-saumon','Pâtes au saumon et épinards',30,'poisson','it','',{pates:90,saumon:80,epinard:100,creme:30}],
+  ['arrabbiata','Penne all’arrabbiata',15,'vege','it','',{pates:100,tomconc:150,ail:3,epices:1,parmesan:10}],
+  ['pizza-reine','Pizza jambon champignons',60,'charcuterie','it','',{pizza:0.33,tomconc:80,mozza:50,jambon:40,champignon:50}],
+  ['aubergines-parmesane','Aubergines à la parmesane',60,'vege','it','L',{aubergine:300,tomconc:150,mozza:50,parmesan:15,huile:15}],
+  // Méditerranée et Orient
+  ['falafels','Falafels, pita et sauce yaourt',45,'legumineuse','med','D',{poischiche:120,pita:1,yaourt:0.4,tomate:80,concombre:0.25,epices:3,huile:15}],
+  ['tajine','Tajine de poulet aux légumes, semoule',60,'volaille','med','',{cuisse:200,courgette:100,carotte:100,oignon:40,epices:3,semoule:60}],
+  ['kefta','Boulettes kefta, semoule et légumes',45,'viande','med','',{boeuf:100,semoule:60,courgette:100,tomconc:80,epices:3,oignon:30}],
+  ['houmous-bowl','Bowl houmous, boulgour et légumes rôtis',30,'legumineuse','med','D',{poischiche:80,tahini:15,boulgour:60,poivron:80,courgette:80,huile:10}],
+  ['moussaka','Moussaka',90,'viande','med','D',{aubergine:200,boeuf:90,tomconc:100,lait:80,beurre:8,emmental:20,oignon:30}],
+  ['paella','Paella au poulet et chorizo',60,'volaille','med','',{riz:80,poulet:80,chorizo:25,poivron:60,petitpois:50,tomconc:60,epices:2}],
+  ['couscous-merguez','Couscous merguez et poulet',90,'viande','med','',{semoule:70,merguez:80,cuisse:120,courgette:100,carotte:100,navet:60,poischiche:40,epices:3}],
+  ['mujaddara','Mujaddara (lentilles, riz et oignons frits)',45,'legumineuse','med','D',{lentille:60,riz:50,oignon:120,yaourt:0.4,huile:15}],
+  ['soupe-corail','Soupe de lentilles corail au cumin',30,'legumineuse','med','DN',{lentillecorail:70,carotte:80,oignon:40,epices:3,citron:0.2,bouillon:0.5}],
+  ['fattouche','Salade fattouche',15,'vege','med','LD',{tomate:120,concombre:0.3,salade:0.2,pita:0.3,herbes:0.3,huile:10,citron:0.25,feta:30}],
+  ['baba-ganoush','Caviar d’aubergine, crudités et feta',45,'vege','med','LD',{aubergine:250,feta:40,tahini:10,carotte:80,concombre:0.25,citron:0.2}],
+  ['gaspacho','Gaspacho et œufs durs',15,'oeuf','med','LD',{tomate:250,concombre:0.25,poivron:60,huile:10,oeuf:1.5}],
+  // Asiatique
+  ['teriyaki','Poulet teriyaki, riz et brocoli',30,'volaille','asie','',{poulet:120,soja:20,riz:70,brocoli:120,gingembre:5}],
+  ['bobun','Bò bún au bœuf',30,'viande','asie','D',{boeufe:100,vermicelle:60,salade:0.2,carotte:60,concombre:0.25,herbes:0.3,soja:10,cacahuete:10}],
+  ['pad-thai','Pad thaï aux crevettes',30,'poisson','asie','D',{nouillesriz:80,crevettes:80,oeuf:1,carotte:50,soja:15,citron:0.2,cacahuete:10}],
+  ['ramen','Ramen au porc et œuf',45,'viande','asie','DN',{nouilles:80,echine:100,oeuf:1,bouillon:0.5,poireau:60,champignon:50,soja:10}],
+  ['rouleaux','Rouleaux de printemps aux crevettes',30,'poisson','asie','D',{galetteriz:3,crevettes:70,vermicelle:30,salade:0.2,carotte:60,herbes:0.3}],
+  ['poke','Poke bowl au saumon',15,'poisson','asie','D',{riz:70,saumon:100,avocat:0.5,concombre:0.25,carotte:50,soja:10}],
+  ['porc-caramel','Porc au caramel, riz',45,'viande','asie','DS',{echine:120,soja:15,oignon:40,riz:70}],
+  ['miso','Soupe miso au tofu et légumes',15,'legumineuse','asie','LND',{miso:20,tofu:80,poireau:80,champignon:60,epinard:60}],
+  ['wok-oeuf','Wok de légumes et omelette fine',15,'oeuf','asie','L',{oeuf:2,brocoli:100,carotte:80,poivron:80,soja:10,huile:10}],
+  ['curry-japonais','Curry japonais au poulet, riz',45,'volaille','asie','D',{poulet:110,pdt:120,carotte:80,oignon:50,riz:70,epices:4}],
+  ['bibimbap','Bibimbap au bœuf',30,'viande','asie','D',{riz:70,boeuf:80,oeuf:1,epinard:80,carotte:60,soja:10}],
+  ['salade-thai','Salade thaïe au bœuf',30,'viande','asie','D',{boeufe:100,salade:0.25,concombre:0.3,tomate:80,herbes:0.3,citron:0.3,soja:10}],
+  // Indienne
+  ['butter-chicken','Butter chicken, riz',45,'volaille','inde','D',{poulet:120,tomconc:120,creme:30,epices:4,riz:70,beurre:10}],
+  ['biryani','Biryani de légumes',45,'vege','inde','D',{riz:80,carotte:60,petitpois:60,choufleur:0.12,epices:4,yaourt:0.3,oignon:40}],
+  ['tikka','Poulet tikka, salade de concombre et naan',30,'volaille','inde','',{poulet:120,yaourt:0.4,epices:3,concombre:0.3,naan:1}],
+  ['aloo-gobi','Aloo gobi (chou-fleur et pommes de terre épicés)',45,'vege','inde','D',{choufleur:0.25,pdt:150,tomconc:80,epices:3,oignon:30,huile:10}],
+  ['korma','Korma de légumes au lait de coco',30,'vege','inde','LD',{courgette:120,choufleur:0.15,epinard:80,coco:60,epices:3}],
+  ['curry-poisson','Curry de poisson coco, riz',30,'poisson','inde','',{colin:120,coco:70,tomconc:80,epices:3,riz:70,epinard:60}],
+  // Mexicaine
+  ['tacos','Tacos au bœuf, salsa et crudités',30,'viande','mex','',{tortilla:2,boeuf:90,tomate:80,salade:0.15,oignon:20,epices:2}],
+  ['burrito-bowl','Burrito bowl au poulet',30,'volaille','mex','',{riz:60,poulet:100,haricotrouge:60,mais:40,avocat:0.25,tomate:60,salade:0.1}],
+  ['fajitas','Fajitas de poulet aux poivrons',30,'volaille','mex','',{tortilla:2,poulet:110,poivron:150,oignon:40,epices:2,yaourt:0.3}],
+  ['enchiladas','Enchiladas aux haricots rouges',45,'legumineuse','mex','D',{tortilla:2,haricotrouge:100,tomconc:100,emmental:30,mais:30}],
+  ['patate-farcie','Patates douces farcies au chili végé',60,'legumineuse','mex','D',{patate:250,haricotrouge:80,mais:40,tomconc:60,emmental:20,epices:2}],
+  ['salade-quinoa-mex','Salade de quinoa à la mexicaine',15,'legumineuse','mex','',{quinoa:60,haricotrouge:70,mais:40,poivron:60,tomate:60,citron:0.25,huile:10}],
+  // Africaine et créole
+  ['mafe','Mafé de poulet, riz',60,'volaille','afrique','D',{cuisse:180,beurrecacahuete:25,tomconc:80,carotte:80,patate:80,oignon:40,riz:60}],
+  ['yassa','Poulet yassa, riz',60,'volaille','afrique','D',{cuisse:180,oignon:150,citron:0.5,moutarde:5,riz:70,huile:10}],
+  ['thieb','Thiéboudiène (riz au poisson)',90,'poisson','afrique','D',{colin:130,riz:80,tomconc:80,carotte:80,chou:0.1,patate:60,oignon:40}],
+  ['rougail','Rougail saucisses, riz',45,'charcuterie','afrique','D',{saucisse:110,tomate:200,oignon:50,gingembre:5,riz:70,epices:2}],
+  ['colombo','Colombo de poulet, riz',60,'volaille','afrique','D',{cuisse:180,pdt:100,courgette:80,coco:40,epices:4,riz:60}],
+  ['salade-chou','Salade de chou croquante et œufs mimosa',15,'oeuf','fr','L',{chou:0.15,carotte:80,oeuf:1.5,yaourt:0.3,citron:0.2,herbes:0.2}]
+].map(([id,name,min,type,cuisine,fl,ing]) => ({id,name,min,type,ing,cuisine,light:fl.includes('L'),nobox:fl.includes('N'),discover:fl.includes('D'),sweet:fl.includes('S')})));
 function vegGrams(r){ let g = 0; for(const k in r.ing) if(VEG_W[k]) g += r.ing[k] * VEG_W[k]; return g; }
 function hasSide(r){ return !('salade' in r.ing) && vegGrams(r) < 150; }
 function mealIng(r){ if(!hasSide(r)) return r.ing; const o = {...r.ing}; for(const k in SIDE) o[k] = (o[k] || 0) + SIDE[k]; return o; }
@@ -538,7 +642,7 @@ function midiMode(f){ f = f || S.foyer; return f.midi || (f.midiMaison ? 'maison
 const TYPE_LABEL = {volaille:'Volaille', viande:'Viande', charcuterie:'Charcuterie', poisson:'Poisson', oeuf:'Œufs', legumineuse:'Légumineuses', vege:'Végétarien'};
 const VEGE_TYPES = ['oeuf','legumineuse','vege'];
 const MEAT_TYPES = ['volaille','viande','charcuterie'];
-const ALLERGEN_KEY = {'Gluten':'gluten','Lactose':'lactose','Œufs':'oeufs','Poisson':'poisson','Soja':'soja','Crustacés':'crustaces','Arachides':'arachides','Fruits à coque':'noix','Sésame':'sesame'};
+const ALLERGEN_KEY = {'Gluten':'gluten','Lactose':'lactose','Œufs':'oeufs','Poisson':'poisson','Soja':'soja','Crustacés':'crustaces','Mollusques':'mollusques','Arachides':'arachides','Fruits à coque':'noix','Sésame':'sesame','Moutarde':'moutarde'};
 const DAYS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
 
 /* ---------- Menus : calcul ---------- */
@@ -558,13 +662,15 @@ function household(){
     if(p.regime === 'vege') vege = true;
     if(p.regime === 'flexi') flexi = true;
   });
-  return {portions, allergens, words, vege, flexi};
+  const sucre = S.people.some(p => p.moinsSucre);
+  return {portions, allergens, words, vege, flexi, sucre};
 }
 function cuisinePrefs(){ return S.foyer.cuisines || []; }
 function cuisineOk(r){ const c = cuisinePrefs(); return !S.foyer.cuisineStrict || !c.length || c.includes(r.cuisine); }
 function compatible(r, h){
   if(h.vege && !VEGE_TYPES.includes(r.type)) return false;
   if(!cuisineOk(r)) return false;
+  if(h.sucre && r.sweet) return false;
   for(const k in r.ing){
     const it = ING[k];
     if((it[4] || []).some(a => h.allergens.has(a))) return false;
@@ -662,6 +768,17 @@ function generate(){
     }
     if(!swapped) break;
   }
+  // Au moins un plat à découvrir par semaine (si l'option est active)
+  if(S.foyer.decouverte !== false && !plan.some(m => m.r && RECIPES.find(r => r.id === m.r).discover)){
+    const used = new Set(plan.map(m => m.r));
+    const order = plan.map((m,i) => i).sort((a,b) => (plan[b].day >= 5) - (plan[a].day >= 5) || Math.random() - 0.5);
+    for(const i of order){
+      const counts = countTypes(plan, i), cur = plan[i].r && recipeCost(RECIPES.find(r => r.id === plan[i].r), h.portions);
+      const cands = RECIPES.filter(r => r.discover && !used.has(r.id) && r.min <= plan[i].max && compatible(r,h) && slotOk(r, plan[i]) && capsOk(r.type, counts, h)
+        && planCost(plan, h) - (cur || 0) + recipeCost(r, h.portions) <= Math.max(target, planCost(plan, h)));
+      if(cands.length){ plan[i].r = cands[Math.floor(Math.random() * cands.length)].id; break; }
+    }
+  }
   S.plan = plan; S.checked = {}; save();
 }
 function shopping(){
@@ -710,6 +827,7 @@ function renderMenus(){
       const q = encodeURIComponent(r.name);
       const mine = S.links && S.links[r.id];
       return `<div style="display:flex;flex-direction:column;gap:12px"><div class="person" style="align-items:flex-start"><span class="opt-t"><small style="text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:600">${m.meal === 'midi' ? (m.box ? 'Midi · gamelle' : 'Midi') : (S.foyer.soirLeger ? 'Soir léger' : 'Soir')}</small>
+        ${r.discover ? '<span class="tag warn" style="align-self:flex-start;font-size:12px;padding:3px 9px;margin:2px 0">À découvrir</span>' : ''}
         <b>${r.name}${hasSide(r) ? '<span style="font-weight:500;color:var(--primary)"> + salade verte</span>' : ''}</b><small>${CUISINES.find(c => c.id === r.cuisine).t} · ${r.min} min · ${TYPE_LABEL[r.type]} · ${euros(recipeCost(r, h.portions))}</small></span>
         <button class="link" data-act="swap" data-i="${m.idx}" aria-label="Changer le plat du ${d.toLowerCase()} ${m.meal}">Changer</button></div>
         <button class="link" style="align-self:flex-start;min-height:36px" data-act="open" data-i="${m.idx}" aria-expanded="${open}">${open ? 'Masquer la recette' : 'Ingrédients et recette'}</button>
