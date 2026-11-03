@@ -147,6 +147,14 @@ h1{margin:0;font-family:var(--display);font-weight:700;font-size:32px;line-heigh
 .rcard{display:flex;flex-direction:column;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
 .rcard:last-child{border-bottom:none}
 .rhead{display:flex;align-items:flex-start;gap:12px;background:none;border:none;padding:0;text-align:left;cursor:pointer;width:100%}
+.pricebox{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;flex-shrink:0;box-shadow:0 1px 0 var(--line)}
+.pricebox svg{color:var(--subtle)}
+.pricebox.mine{border-color:var(--primary);background:var(--primary-soft);color:var(--primary-ink)}
+.pricebox.mine svg{color:var(--primary)}
+.pricebox[aria-expanded="true"]{border:2px solid var(--primary)}
+.priceedit{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;background:var(--primary-soft)}
+.priceedit .unit{background:var(--surface)}
+.priceedit .unit input{font-size:20px;font-weight:600}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom, 0px));background:var(--fg);color:var(--bg);padding:12px 18px;border-radius:24px;font-size:15px;font-weight:500;max-width:calc(100% - 32px);box-shadow:0 6px 24px rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:20}
 #toast.show{opacity:1}
 #print{display:none}
@@ -181,6 +189,7 @@ const KEY = 'mieux-manger.v1';
 const icons = {
   back:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
   adult:'<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
+  pencil:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg>',
   trash:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--subtle)"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   child:'<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="9" r="3"/><path d="M6.5 21c0-3.2 2.5-5.5 5.5-5.5s5.5 2.3 5.5 5.5"/></svg>'
 };
@@ -450,6 +459,7 @@ function renderHome(){
       <button class="card" style="text-align:left;cursor:pointer;flex-direction:row;align-items:center;gap:14px" data-act="library">
         <span class="opt-t" style="flex:1"><b>Bibliothèque de recettes</b><small>${RECIPES.length} recettes à chercher, imprimer et partager</small></span>
         <span aria-hidden="true" style="font-size:22px;color:var(--primary)">›</span></button>
+      <button class="btn ghost" data-act="share-app">Partager l’app</button>
     </div><div class="spacer"></div>
     ${confirmReset ? `<div class="card"><b>Effacer tous les profils ?</b><p class="note">Les données enregistrées sur ce téléphone seront supprimées.</p>
       <div class="grid2"><button class="btn ghost" data-act="cancel-reset">Annuler</button><button class="btn danger" data-act="reset">Effacer</button></div></div>`
@@ -1261,23 +1271,30 @@ function renderCourses(){
   const total = keys.reduce((t,k) => t + lineCost(k, tot[k]), 0);
   const left = keys.filter(k => !checked[k]).length;
   let html = `<div class="top"><button class="icon-btn" aria-label="Retour" data-act="menus">${icons.back}</button><span class="count" style="flex:1">${left} article${left>1?'s':''} restant${left>1?'s':''}</span></div>`;
-  html += head('Courses', 'Liste de la semaine', `Total estimé : ${euros(total)}. Touche un prix pour mettre le tien.`);
+  html += head('Courses', 'Liste de la semaine', `Total estimé : ${euros(total)}. Pour mettre ton prix, touche la case du prix à droite d’un article.`);
   html += `<div class="body"><button class="btn ghost" data-act="share-list">Partager la liste (articles restants)</button>`;
   CATS.forEach(cat => {
     const items = keys.filter(k => ING[k][1] === cat).sort((a,b) => ING[a][0].localeCompare(ING[b][0], 'fr'));
     if(!items.length) return;
     html += `<h2 class="section-title">${cat}</h2><div class="card" style="gap:4px;padding:8px 16px">${items.map(k => {
       const editing = view.edit === k, mine = S.prices && S.prices[k] != null;
-      return `<div class="person" style="min-height:56px;gap:12px">
+      return `<div style="display:flex;flex-direction:column;gap:10px;padding:6px 0">
+        <div class="person" style="min-height:52px;gap:12px">
         <input type="checkbox" id="c-${k}" data-tick="${k}" ${checked[k] ? 'checked' : ''} style="width:24px;height:24px;accent-color:var(--primary);margin:0;flex-shrink:0">
         <label for="c-${k}" class="opt-t" style="flex:1;cursor:pointer;${checked[k] ? 'text-decoration:line-through;opacity:.6' : ''}"><b style="font-size:15px">${ING[k][0]}</b><small>${fmtQty(k, tot[k])}</small></label>
-        ${editing ? `<div class="unit" style="height:44px;width:120px;padding:0 10px"><input id="p-${k}" data-price="${k}" inputmode="decimal" value="${String(unitPrice(k)).replace('.',',')}" aria-label="Prix ${ING[k][0]} en ${unitLabel(k)}"><span style="font-size:12px">${unitLabel(k)}</span></div>
-          <button class="link" data-act="price-ok" data-k="${k}">OK</button>`
-        : `<button class="link" style="font-variant-numeric:tabular-nums;${mine ? '' : 'color:var(--subtle);font-weight:500'}" data-act="price" data-k="${k}" aria-label="Modifier le prix de ${ING[k][0]}">${euros(lineCost(k, tot[k]))}</button>`}
+        <button class="pricebox ${mine ? 'mine' : ''}" data-act="price" data-k="${k}" aria-expanded="${editing}" aria-label="Modifier le prix de ${ING[k][0]}, actuellement ${euros(lineCost(k, tot[k]))}">${euros(lineCost(k, tot[k]))}${icons.pencil}</button>
+        </div>
+        ${editing ? `<div class="priceedit">
+          <label class="label" for="p-${k}">Ton prix pour : ${ING[k][0]}</label>
+          <div class="unit" style="border:2px solid var(--primary)"><input id="p-${k}" data-price="${k}" inputmode="decimal" enterkeyhint="done" placeholder="${String(ING[k][3]).replace('.',',')}" value="${mine ? String(S.prices[k]).replace('.',',') : ''}"><span>${unitLabel(k)}</span></div>
+          <span class="hint">Prix ${ING[k][2] === 'g' ? 'au kilo' : ING[k][2] === 'ml' ? 'au litre' : 'à la pièce'}, comme sur l’étiquette du magasin. Estimation actuelle : ${String(ING[k][3]).replace('.',',')} ${unitLabel(k)}${S.foyer.bio !== 'non' && bioFactor(ING[k][1]) > 1 ? ' (hors surcoût bio)' : ''}.</span>
+          <div class="grid2"><button class="btn ghost" style="min-height:48px" data-act="price-cancel">Annuler</button><button class="btn" style="min-height:48px" data-act="price-ok" data-k="${k}">Enregistrer</button></div>
+          ${mine ? `<button class="link" style="align-self:flex-start" data-act="price-reset" data-k="${k}">Revenir au prix estimé</button>` : ''}
+        </div>` : ''}
       </div>`;
     }).join('')}</div>`;
   });
-  html += `<p class="note">En gris : prix moyen estimé. En vert : ton prix. Tes prix sont gardés pour les semaines suivantes.</p></div>`;
+  html += `<p class="note">Case blanche : prix moyen estimé. Case verte : ton prix. Tes prix sont gardés pour les semaines suivantes.</p></div>`;
   return html;
 }
 /* ---------- Événements ---------- */
@@ -1370,8 +1387,22 @@ app.addEventListener('click', e => {
     if(next){ S.plan[i].r = next; save(); }
     render(); return;
   }
-  if(act === 'price'){ if(view.edit) commitPrice(view.edit); view.edit = b.dataset.k; view.priceVal = null; render(); const el = document.getElementById('p-' + b.dataset.k); if(el){ el.focus(); el.select(); } return; }
-  if(act === 'price-ok'){ commitPrice(b.dataset.k); render(); return; }
+  if(act === 'price'){
+    const k = b.dataset.k;
+    if(view.edit === k){ view.edit = null; view.priceVal = null; render(); return; }
+    view.edit = k; view.priceVal = null; render();
+    const el = document.getElementById('p-' + k); if(el){ el.focus(); el.select(); }
+    return;
+  }
+  if(act === 'price-ok'){
+    const had = view.priceVal != null && view.priceVal !== '';
+    commitPrice(b.dataset.k); render();
+    if(had) toast('Prix enregistré');
+    return;
+  }
+  if(act === 'price-cancel'){ view.edit = null; view.priceVal = null; render(); return; }
+  if(act === 'price-reset'){ if(S.prices) delete S.prices[b.dataset.k]; save(); view.edit = null; view.priceVal = null; render(); toast('Prix estimé rétabli'); return; }
+  if(act === 'share-app'){ shareOrCopy('Mieux Manger', `Mieux Manger : menus équilibrés selon le budget, liste de courses et ${RECIPES.length} recettes.\nÀ ouvrir dans Chrome (Android) ou Safari (iPhone), puis « Ajouter à l’écran d’accueil » :\n${APP_URL}`); return; }
   if(act === 'open'){ const i = +b.dataset.i; view.open = view.open === i ? null : i; view.linkErr = null; view.linkVal = null; render(); return; }
   if(act === 'link-ok'){
     const k = b.dataset.k, v = String(view.linkVal ?? (S.links && S.links[k]) ?? '').trim();
