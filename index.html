@@ -239,7 +239,9 @@ function age(dateStr){
   if(m < 0 || (m === 0 && n.getDate() < b.getDate())) a--;
   return a;
 }
-function imc(p){ const t = +p.taille/100, w = +p.poids; return t && w ? w/(t*t) : null; }
+function imc(p){ if(p.sansPoids) return null; const t = +p.taille/100, w = +p.poids; return t && w ? w/(t*t) : null; }
+// Sans poids indiqué : poids de référence pour la taille (IMC 22, milieu de la zone normale)
+function refWeight(p){ const t = +p.taille/100; return 22 * t * t; }
 
 function needs(p){
   const a = age(p.naissance);
@@ -249,19 +251,21 @@ function needs(p){
     let pct = 100; for(const [max,v] of bands){ if(a < max){ pct = v; break; } }
     return {child:true, age:a, pct};
   }
-  const w = +p.poids, h = +p.taille;
+  const h = +p.taille, w = p.sansPoids ? refWeight(p) : +p.poids;
   const bmr = 10*w + 6.25*h - 5*a + (p.sexe === 'homme' ? 5 : -161);
   let f = ACTIVITY.find(x => x.id === p.activite).f + (p.metier ? 0.15 : 0);
   f = Math.min(f, 1.95);
   const tdee = bmr * f;
   const g = GOALS.find(x => x.id === p.objectif);
-  let kcal = tdee * (1 + g.k);
+  // Sans poids, on ne peut pas vérifier qu'une perte est adaptée : déficit plus doux
+  const k = (p.sansPoids && g.id === 'perte') ? -0.08 : g.k;
+  let kcal = tdee * (1 + k);
   if(kcal < bmr * 1.1) kcal = bmr * 1.1; // jamais en dessous du métabolisme de base
   const protPerKg = (p.objectif === 'muscle' || p.objectif === 'perte') ? 1.6 : 1.2;
   const prot = protPerKg * w;
   const lip = kcal * 0.3 / 9;
   const glu = Math.max(0, (kcal - prot*4 - lip*9) / 4);
-  return {kcal, prot, lip, glu, age:a,
+  return {kcal, prot, lip, glu, age:a, estimated: !!p.sansPoids,
     split:[prot*4/kcal, glu*4/kcal, lip*9/kcal]};
 }
 
@@ -315,8 +319,12 @@ function renderPersonStep(){
         <input class="input" id="naissance" data-field="naissance" type="date" value="${esc(p.naissance)}"></div>
       ${child ? '' : `<div class="grid2">
         <div class="field"><label class="label" for="taille">Taille</label><div class="unit"><input id="taille" data-field="taille" inputmode="numeric" placeholder="178" value="${esc(p.taille)}"><span>cm</span></div></div>
-        <div class="field"><label class="label" for="poids">Poids</label><div class="unit"><input id="poids" data-field="poids" inputmode="decimal" placeholder="80" value="${esc(p.poids)}"><span>kg</span></div></div>
-      </div>`}</div>`;
+        <div class="field"><label class="label" for="poids">Poids</label>${p.sansPoids
+          ? `<div class="unit" style="background:var(--track);border-color:var(--track)"><span style="color:var(--muted)">Non indiqué</span></div>`
+          : `<div class="unit"><input id="poids" data-field="poids" inputmode="decimal" placeholder="80" value="${esc(p.poids)}"><span>kg</span></div>`}</div>
+      </div>
+      <label class="toggle green" for="sanspoids"><span class="opt-t" style="flex:1"><b>Je préfère ne pas indiquer mon poids</b><small>Les besoins seront estimés avec la taille, l’âge et l’activité</small></span>
+      <input id="sanspoids" type="checkbox" data-check="sansPoids" ${p.sansPoids ? 'checked' : ''}></label>`}</div>`;
   }
   if(id === 'activite'){
     h += head('Mode de vie', `${esc(name)} bouge combien ?`);
@@ -390,7 +398,7 @@ function renderRecap(){
   const n = needs(p);
   return topBar(100, 'Terminé', true) + head('Profil de ' + esc(p.prenom), 'Repères du jour') +
     `<div class="body">${nutritionBlock(p, n)}${tagsFor(p)}
-    <p class="note">Estimation par la formule de Mifflin-St Jeor et ton niveau d’activité. C’est un repère pour les menus, pas un objectif à suivre à la calorie près.</p></div>
+    <p class="note">${n.estimated ? 'Poids non indiqué : estimation à partir de la taille, de l’âge et de l’activité, sur la base d’un poids moyen pour cette taille. C’est moins précis, mais suffisant pour dimensionner les repas.' : 'Estimation par la formule de Mifflin-St Jeor et ton niveau d’activité.'} C’est un repère pour les menus, pas un objectif à suivre à la calorie près.</p></div>
     <div class="spacer"></div><div class="actions">
       ${view.delId === p.id ? delConfirm(p) : `<div class="grid2"><button class="btn text" data-act="edit" data-id="${p.id}">Modifier ce profil</button>
       <button class="btn text" style="color:var(--error)" data-act="ask-del" data-id="${p.id}">Supprimer ce profil</button></div>`}
@@ -492,8 +500,8 @@ function validatePerson(){
     if(p.type === 'adulte'){
       const t = +String(p.taille).replace(',','.'), w = +String(p.poids).replace(',','.');
       if(!(t >= 120 && t <= 230)) return 'Indique une taille entre 120 et 230 cm.';
-      if(!(w >= 30 && w <= 250)) return 'Indique un poids entre 30 et 250 kg.';
-      p.taille = String(t); p.poids = String(w);
+      if(!p.sansPoids && !(w >= 30 && w <= 250)) return 'Indique un poids entre 30 et 250 kg, ou coche « Je préfère ne pas indiquer mon poids ».';
+      p.taille = String(t); p.poids = p.sansPoids ? '' : String(w);
     }
   }
   if(id === 'objectif' && p.objectif === 'perte'){ const i = imc(p); if(i !== null && i < 20) return 'Choisis un autre objectif.'; }
@@ -931,6 +939,24 @@ const STEPS = {
 function stepsOf(r){ return STEPS[r.id] || ["Suis la recette de ton choix avec les liens ci-dessous."]; }
 function vegGrams(r){ let g = 0; for(const k in r.ing) if(VEG_W[k]) g += r.ing[k] * VEG_W[k]; return g; }
 function hasSide(r){ return !('salade' in r.ing) && vegGrams(r) < 150; }
+// Féculent ajouté pour les enfants quand le plat n'en contient pas (soirs légers, salades, soupes…)
+const STARCH = new Set(['pates','riz','semoule','pdt','quinoa','boulgour','polenta','gnocchi','nouilles','nouillesriz','vermicelle','baguette','painmie','pita','naan','tortilla','galette','brisee','pizza','lasagne','patate','lentille','poischiche','haricotrouge','haricotblanc','lentillecorail','poiscasse','plantain','galetteriz']);
+const KID_STARCH = {riz:60, pates:70, semoule:60, pdt:150, baguette:0.25, tortilla:1}; // par portion adulte équivalente
+const STARCH_NAME = {riz:'riz', pates:'pâtes', semoule:'semoule', pdt:'pommes de terre', baguette:'pain', tortilla:'tortilla'};
+function hasStarch(r){ return Object.keys(r.ing).some(k => STARCH.has(k)); }
+function kids(){ return S.people.filter(p => p.type === 'enfant').map(p => ({p, n:needs(p)})).filter(x => x.n.age === null || x.n.age >= 1); }
+function kidPortions(){ return kids().reduce((t,x) => t + (x.n.age === null ? 0.5 : x.n.pct / 100), 0); }
+function kidStarchKey(r){
+  if(hasStarch(r) || !kids().length) return null;
+  if(/soupe|velout|bouillon|miso|gaspacho|salade|caviar|guacamole|fattouche|taboul/i.test(r.name)) return 'baguette';
+  return ({asie:'riz', inde:'riz', it:'pates', med:'semoule', afrique:'riz', mex:'tortilla'})[r.cuisine] || 'pdt';
+}
+function kidIng(r){ const k = kidStarchKey(r); return k ? {[k]: KID_STARCH[k] * kidPortions()} : {}; }
+function kidLabel(r){
+  const k = kidStarchKey(r); if(!k) return '';
+  const names = kids().map(x => x.p.prenom.trim()).filter(Boolean);
+  return `${STARCH_NAME[k]} pour ${names.length === 1 ? names[0] : 'les enfants'}`;
+}
 function mealIng(r){ if(!hasSide(r)) return r.ing; const o = {...r.ing}; for(const k in SIDE) o[k] = (o[k] || 0) + SIDE[k]; return o; }
 function midiMode(f){ f = f || S.foyer; return f.midi || (f.midiMaison ? 'maison' : 'non'); }
 const TYPE_LABEL = {volaille:'Volaille', viande:'Viande', charcuterie:'Charcuterie', poisson:'Poisson', oeuf:'Œufs', legumineuse:'Légumineuses', vege:'Végétarien'};
@@ -982,7 +1008,12 @@ function bioFactor(cat){
 }
 function unitPrice(k){ return (S.prices && S.prices[k] != null) ? S.prices[k] : ING[k][3]; }
 function lineCost(k, qty){ const it = ING[k]; const base = it[2] === 'pc' ? qty : qty / 1000; return base * unitPrice(k) * bioFactor(it[1]); }
-function recipeCost(r, portions){ const ing = mealIng(r); let c = 0; for(const k in ing) c += lineCost(k, ing[k] * portions); return c; }
+function recipeCost(r, portions){
+  const ing = mealIng(r), extra = kidIng(r); let c = 0;
+  for(const k in ing) c += lineCost(k, ing[k] * portions);
+  for(const k in extra) c += lineCost(k, extra[k]);
+  return c;
+}
 function slotOk(r, slot){
   if(slot.box && r.nobox) return false;
   if(S.foyer.soirLeger && slot.meal === 'soir' && !r.light) return false;
@@ -1077,7 +1108,11 @@ function generate(){
 }
 function shopping(){
   const h = household(), tot = {};
-  (S.plan || []).forEach(m => { if(!m.r) return; const ing = mealIng(RECIPES.find(x => x.id === m.r)); for(const k in ing) tot[k] = (tot[k] || 0) + ing[k] * h.portions; });
+  (S.plan || []).forEach(m => {
+    if(!m.r) return; const r = RECIPES.find(x => x.id === m.r), ing = mealIng(r), extra = kidIng(r);
+    for(const k in ing) tot[k] = (tot[k] || 0) + ing[k] * h.portions;
+    for(const k in extra) tot[k] = (tot[k] || 0) + extra[k];
+  });
   return tot;
 }
 function fmtQty(k, q){
@@ -1122,10 +1157,10 @@ function renderMenus(){
       const mine = S.links && S.links[r.id];
       return `<div style="display:flex;flex-direction:column;gap:12px"><div class="person" style="align-items:flex-start"><span class="opt-t"><small style="text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:600">${m.meal === 'midi' ? (m.box ? 'Midi · gamelle' : 'Midi') : (S.foyer.soirLeger ? 'Soir léger' : 'Soir')}</small>
         ${r.discover ? '<span class="tag warn" style="align-self:flex-start;font-size:12px;padding:3px 9px;margin:2px 0">À découvrir</span>' : ''}
-        <b>${r.name}${hasSide(r) ? '<span style="font-weight:500;color:var(--primary)"> + salade verte</span>' : ''}</b><small>${CUISINES.find(c => c.id === r.cuisine).t} · ${r.min} min · ${TYPE_LABEL[r.type]} · ${euros(recipeCost(r, h.portions))}</small></span>
+        <b>${r.name}${hasSide(r) ? '<span style="font-weight:500;color:var(--primary)"> + salade verte</span>' : ''}${kidLabel(r) ? `<span style="font-weight:500;color:var(--accent-ink)"> + ${esc(kidLabel(r))}</span>` : ''}</b><small>${CUISINES.find(c => c.id === r.cuisine).t} · ${r.min} min · ${TYPE_LABEL[r.type]} · ${euros(recipeCost(r, h.portions))}</small></span>
         <button class="link" data-act="swap" data-i="${m.idx}" aria-label="Changer le plat du ${d.toLowerCase()} ${m.meal}">Changer</button></div>
         <button class="link" style="align-self:flex-start;min-height:36px" data-act="open" data-i="${m.idx}" aria-expanded="${open}">${open ? 'Masquer la recette' : 'Ingrédients et recette'}</button>
-        ${open ? recipeBody(r, h.portions, 'Pour le foyer') : ''}</div>`;
+        ${open ? recipeBody(r, h.portions, 'Pour le foyer', true) : ''}</div>`;
     }).join('')}</div>`;
   });
   html += `<p class="note">Prix moyens estimés, à remplacer par tes prix dans la liste de courses. ${S.foyer.bio !== 'non' ? 'Surcoût bio inclus.' : ''}</p></div>
@@ -1136,12 +1171,16 @@ function renderMenus(){
 
 /* ---------- Recettes : bloc détaillé, partage, impression ---------- */
 function portionsLabel(n){ const v = Math.round(n * 10) / 10; return v.toLocaleString('fr-FR') + ' portion' + (v > 1 ? 's' : '') + ' adulte' + (v > 1 ? 's' : ''); }
-function ingLines(r, n){ return Object.entries(mealIng(r)).map(([k,q]) => [ING[k][0], fmtQty(k, q * n)]); }
-function recipeBody(r, n, label){
+function ingLines(r, n, withKids){
+  const lines = Object.entries(mealIng(r)).map(([k,q]) => [ING[k][0], fmtQty(k, q * n)]);
+  if(withKids) Object.entries(kidIng(r)).forEach(([k,q]) => lines.push([`${ING[k][0]} (${kidLabel(r).replace(/^.*? pour /, 'pour ')})`, fmtQty(k, q)]));
+  return lines;
+}
+function recipeBody(r, n, label, withKids){
   const q = encodeURIComponent(r.name), mine = S.links && S.links[r.id];
   return `<div class="rbody">
     <div style="display:flex;flex-direction:column;gap:8px"><h3>Ingrédients · ${label || portionsLabel(n)}</h3>
-      <ul class="ing">${ingLines(r, n).map(([a,b]) => `<li><span>${a}</span><span>${b}</span></li>`).join('')}</ul>
+      <ul class="ing">${ingLines(r, n, withKids).map(([a,b]) => `<li><span>${a}</span><span>${b}</span></li>`).join('')}</ul>
       ${hasSide(r) ? '<small class="hint">Salade verte et vinaigrette ajoutées pour compléter en légumes.</small>' : ''}</div>
     <div style="display:flex;flex-direction:column;gap:8px"><h3>Préparation</h3>
       <ol class="steps">${stepsOf(r).map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>
@@ -1168,7 +1207,7 @@ function weekText(){
   const plan = S.plan || [];
   return 'Menus de la semaine\n\n' + DAYS.map((d,i) => d + '\n' + plan.filter(m => m.day === i && m.r).map(m => {
     const r = RECIPES.find(x => x.id === m.r);
-    return `- ${m.meal === 'midi' ? 'Midi' : 'Soir'} : ${r.name}${hasSide(r) ? ' + salade verte' : ''}`;
+    return `- ${m.meal === 'midi' ? 'Midi' : 'Soir'} : ${r.name}${hasSide(r) ? ' + salade verte' : ''}${kidLabel(r) ? ' + ' + kidLabel(r) : ''}`;
   }).join('\n')).join('\n\n') + `\n\nMieux Manger · ${APP_URL}`;
 }
 function listText(){

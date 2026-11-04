@@ -1,6 +1,6 @@
 // Service worker de Mieux Manger : l'app fonctionne hors connexion (courses au magasin).
 // Change le numéro de version à chaque mise à jour de index.html pour forcer le rafraîchissement.
-const CACHE = 'mieux-manger-v5';
+const CACHE = 'mieux-manger-v6';
 const FILES = [
   './',
   './index.html',
